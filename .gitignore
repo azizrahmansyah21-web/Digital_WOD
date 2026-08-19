@@ -1,0 +1,39 @@
+# Environment & Secret files
+.env
+.env.*
+!.env.example
+
+# Markdown Documentation & AI Prompt Logs
+antigravity.md
+**/antigravity.md
+gemini-code-*.md
+**/gemini-code-*.md
+*BRD*.md
+*PRD*.md
+Business Requirements Document - WOD.md
+PRD_Update_DSS.md
+
+# Dependencies
+node_modules/
+**/node_modules/
+vendor/
+**/vendor/
+
+# Build Output
+dist/
+**/dist/
+build/
+**/build/
+
+# IDE & System Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

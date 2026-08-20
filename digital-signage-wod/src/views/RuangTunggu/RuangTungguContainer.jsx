@@ -39,7 +39,7 @@ const RuangTungguContainer = () => {
     const fetchData = async () => {
       // Step A: Attempt fetching JSON from Laravel API proxy
       try {
-        const response = await axios.get(`${apiUrl}/antrean`, { timeout: 3000 });
+        const response = await axios.get(`${apiUrl}/antrean`, { timeout: 8000 });
         if (response.data && Array.isArray(response.data) && response.data.length > 0) {
           setVehicles(response.data);
           setIsLiveSource(true);

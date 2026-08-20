@@ -31,9 +31,9 @@ const CalloutAlert = ({ vehicle, onComplete }) => {
           {vehicle.customer}
         </h1>
         
-        <div className="bg-white px-10 py-4 rounded-xl shadow-lg mb-8 border-4 border-emerald-700">
-          <p className="text-2xl font-bold text-gray-500 uppercase tracking-widest mb-1">Nomor Polisi</p>
-          <PlateNumber plate={vehicle.plate} className="text-7xl px-8 py-2 w-[400px]" />
+        <div className="bg-white px-10 py-5 rounded-2xl shadow-xl mb-8 border-4 border-emerald-700 flex flex-col items-center">
+          <p className="text-xl font-extrabold text-gray-500 uppercase tracking-widest mb-3">Nomor Polisi</p>
+          <PlateNumber plate={vehicle.plate} className="text-5xl md:text-6xl px-6 py-3 min-w-[340px] max-w-[460px] justify-between" />
         </div>
         
         <div className="bg-emerald-800 text-emerald-100 px-8 py-3 rounded-full text-3xl font-black tracking-wide border-2 border-emerald-500 uppercase shadow-lg">

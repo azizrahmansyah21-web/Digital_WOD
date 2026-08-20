@@ -12,6 +12,7 @@ gemini-code-*.md
 *PRD*.md
 Business Requirements Document - WOD.md
 PRD_Update_DSS.md
+Implementation_Plan_Digital_Signage.md
 
 # Dependencies
 node_modules/

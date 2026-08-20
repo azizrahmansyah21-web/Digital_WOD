@@ -3,49 +3,104 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Http\JsonResponse;
-use App\Jobs\SendWhatsappNotification;
+use Illuminate\Support\Facades\Http;
+use DOMDocument;
+use DOMXPath;
 
 class QueueController extends Controller
 {
     /**
      * GET /api/antrean
-     * Fetch Toyota WOD queue data with Redis 10s Caching to prevent DDoS on central server.
+     * Nembak URL display Toyota, parsing HTML mentah tabel antrean menjadi array JSON bersih,
+     * dan mengembalikan hasilnya langsung ke React.
      */
     public function index(): JsonResponse
     {
-        // Cache data for 10 seconds using Redis
-        $queueData = Cache::remember('toyota_wod_data', 10, function () {
-            try {
-                $response = Http::timeout(5)->get('http://172.16.3.30/service/public/display/ruang-tunggu/ubta');
+        $targetUrl = 'http://172.16.3.30/service/public/display/ruang-tunggu/ubta';
+        $queueData = [];
 
-                if ($response->successful()) {
-                    // Return raw JSON or parsed data array
-                    return $response->json() ?? $this->getMockToyotaData();
-                }
-            } catch (\Exception $e) {
-                // Log exception if central server is unreachable
+        try {
+            // 1. Fetch raw HTML from Toyota local display server
+            $response = Http::timeout(5)->get($targetUrl);
+
+            if ($response->successful()) {
+                $html = $response->body();
+                // 2. Extract table data from raw HTML
+                $queueData = $this->parseToyotaHtmlTable($html);
             }
-
-            return $this->getMockToyotaData();
-        });
-
-        // Trigger WhatsApp Notification Jobs for newly completed vehicles asynchronously
-        foreach ($queueData as $vehicle) {
-            if (isset($vehicle['status']) && ($vehicle['status'] === 'SELESAI DIKERJAKAN' || $vehicle['status'] === 'Ready')) {
-                if (isset($vehicle['phone']) && !empty($vehicle['phone'])) {
-                    SendWhatsappNotification::dispatch($vehicle);
-                }
-            }
+        } catch (\Exception $e) {
+            // Fallback if target server is unreachable or timed out
         }
 
+        // Fallback to mock data if empty (e.g. when testing offline)
+        if (empty($queueData)) {
+            $queueData = $this->getMockToyotaData();
+        }
+
+        // 3. Return clean JSON array directly to React
         return response()->json($queueData);
     }
 
     /**
-     * Fallback mock data structure
+     * Parsing tabel HTML dari server Toyota menjadi JSON array
+     */
+    private function parseToyotaHtmlTable(string $html): array
+    {
+        $parsed = [];
+
+        if (empty(trim($html))) {
+            return $parsed;
+        }
+
+        $dom = new DOMDocument();
+        // Suppress warnings caused by HTML5 tags or legacy syntax
+        @$dom->loadHTML($html);
+        $xpath = new DOMXPath($dom);
+
+        // Find table rows
+        $rows = $xpath->query('//table//tr');
+
+        if ($rows && $rows->length > 0) {
+            $idCounter = 1;
+            foreach ($rows as $index => $row) {
+                // Skip table header row
+                if ($index === 0) {
+                    continue;
+                }
+
+                $cells = $xpath->query('.//td', $row);
+                if ($cells->length >= 6) {
+                    $plateRaw = trim(preg_replace('/\s+/', ' ', $cells->item(0)->textContent));
+                    $customer = trim(preg_replace('/\s+/', ' ', $cells->item(1)->textContent));
+                    $startTime = trim(preg_replace('/\s+/', ' ', $cells->item(2)->textContent));
+                    $estTime = trim(preg_replace('/\s+/', ' ', $cells->item(3)->textContent));
+                    $status = trim(preg_replace('/\s+/', ' ', $cells->item(4)->textContent));
+                    $advisor = trim(preg_replace('/\s+/', ' ', $cells->item(5)->textContent));
+
+                    if (!empty($plateRaw)) {
+                        // Format plate number (convert "BM-1893-PX" to "BM 1893 PX")
+                        $formattedPlate = str_replace('-', ' ', $plateRaw);
+
+                        $parsed[] = [
+                            'id' => $idCounter++,
+                            'plate' => $formattedPlate,
+                            'customer' => $customer,
+                            'startTime' => $startTime,
+                            'estTime' => $estTime,
+                            'status' => strtoupper($status),
+                            'advisor' => $advisor
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $parsed;
+    }
+
+    /**
+     * Data mock cadangan untuk pengujian jika server Toyota tidak dapat dijangkau
      */
     private function getMockToyotaData(): array
     {
@@ -54,62 +109,29 @@ class QueueController extends Controller
                 'id' => 1,
                 'plate' => 'BM 1030 FX',
                 'customer' => 'REPINTA NAIBAHO',
-                'model' => 'Innova Zenix Hybrid',
-                'status' => 'PROSES PERBAIKAN',
+                'startTime' => '11:00',
                 'estTime' => '14:00',
-                'advisor' => 'RDS',
-                'phone' => '081234567890'
+                'status' => 'PROSES PERBAIKAN',
+                'advisor' => 'RDS'
             ],
             [
                 'id' => 2,
                 'plate' => 'BM 1778 UE',
                 'customer' => 'AMAR',
-                'model' => 'Fortuner GR Sport',
-                'status' => 'TUNGGU CUCI',
+                'startTime' => '11:15',
                 'estTime' => '13:00',
-                'advisor' => 'RDS',
-                'phone' => '081298765432'
+                'status' => 'TUNGGU CUCI',
+                'advisor' => 'RDS'
             ],
             [
                 'id' => 3,
                 'plate' => 'F 1848 FAL',
                 'customer' => 'AKHIR ZUHRI SIREGAR',
-                'model' => 'Avanza 1.5 G',
-                'status' => 'TUNGGU CUCI',
+                'startTime' => '11:30',
                 'estTime' => '14:00',
-                'advisor' => 'DFM',
-                'phone' => '081311223344'
-            ],
-            [
-                'id' => 4,
-                'plate' => 'BM 1786 AAN',
-                'customer' => 'PT. GO RENTAL',
-                'model' => 'Veloz 1.5 Q',
-                'status' => 'MENUNGGU DIKERJAKAN',
-                'estTime' => '15:30',
-                'advisor' => 'RDS',
-                'phone' => '081255667788'
-            ],
-            [
-                'id' => 5,
-                'plate' => 'BM 1990 KTA',
-                'customer' => 'OKTAVIANI SAFUTRI',
-                'model' => 'Yaris Cross HEV',
                 'status' => 'SELESAI DIKERJAKAN',
-                'estTime' => '12:30',
-                'advisor' => 'THS_UBTI',
-                'phone' => '081299887766'
-            ],
-            [
-                'id' => 6,
-                'plate' => 'BK 1182 DZ',
-                'customer' => 'DEWI LESTARI',
-                'model' => 'Hilux Double Cab',
-                'status' => 'SELESAI DIKERJAKAN',
-                'estTime' => '12:00',
-                'advisor' => 'RID',
-                'phone' => '081377889900'
-            ],
+                'advisor' => 'DFM'
+            ]
         ];
     }
 }

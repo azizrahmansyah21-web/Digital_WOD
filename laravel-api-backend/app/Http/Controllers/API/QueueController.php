@@ -134,4 +134,37 @@ class QueueController extends Controller
             ]
         ];
     }
+
+    /**
+     * Generate Audio TTS stream via Google Translate
+     */
+    public function generateTTS(\Illuminate\Http\Request $request)
+    {
+        $text = $request->query('text', 'Panggilan antrean');
+        $cleanText = urlencode(strip_tags($text));
+        
+        // URL Google Translate TTS (Bahasa Indonesia)
+        $url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=id&q=" . $cleanText;
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        // User agent wajib diisi agar tidak di-block oleh Google
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        $audioContent = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || !$audioContent) {
+            return response()->json(['error' => 'Gagal membuat audio TTS'], 500);
+        }
+
+        // Return binary audio file
+        return response($audioContent, 200, [
+            'Content-Type' => 'audio/mpeg',
+            'Content-Disposition' => 'inline; filename="tts.mp3"',
+            'Cache-Control' => 'no-cache, must-revalidate',
+        ]);
+    }
 }

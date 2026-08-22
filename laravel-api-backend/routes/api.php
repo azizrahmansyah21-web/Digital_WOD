@@ -10,3 +10,4 @@ use App\Http\Controllers\API\QueueController;
 */
 
 Route::get('/antrean', [QueueController::class, 'index']);
+Route::get('/tts', [QueueController::class, 'generateTTS']);

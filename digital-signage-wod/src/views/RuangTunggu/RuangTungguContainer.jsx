@@ -222,39 +222,39 @@ const RuangTungguContainer = () => {
     };
   }, []);
 
-  // Helper function for Android TV compatible TTS voice playback
-  const playTtsCallout = (customerName, plateStr) => {
+  // Audio Speech TTS Engine Helper with getVoices() slow load fallback
+  const triggerTTS = (text) => {
     if (!('speechSynthesis' in window)) return;
-
     try {
-      // 1. Selalu panggil cancel() sebelum mengucapkan kata baru
       window.speechSynthesis.cancel();
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = 'id-ID';
+      msg.rate = 0.9;
 
-      const ttsCustomer = (customerName || '').toLowerCase();
-      const ttsPlate = (plateStr || '').replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
-      const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${ttsCustomer}, dengan nomor kendaraan ${ttsPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
-
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = 'id-ID';
-      utterance.rate = 0.9;
-
-      const assignVoice = () => {
-        const voices = window.speechSynthesis.getVoices();
-        const idVoice = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
-        if (idVoice) {
-          utterance.voice = idVoice;
-        }
-      };
-
-      assignVoice();
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = assignVoice;
+      let voices = window.speechSynthesis.getVoices();
+      if (voices.length === 0) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          voices = window.speechSynthesis.getVoices();
+          const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
+          if (idV) msg.voice = idV;
+          window.speechSynthesis.speak(msg);
+        };
+      } else {
+        const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
+        if (idV) msg.voice = idV;
+        window.speechSynthesis.speak(msg);
       }
-
-      window.speechSynthesis.speak(utterance);
     } catch (err) {
       console.warn('TTS playback deferred or interrupted by browser policy:', err);
     }
+  };
+
+  // Helper function for vehicle callout string formatting
+  const playTtsCallout = (customerName, plateStr) => {
+    const ttsCustomer = (customerName || '').toLowerCase();
+    const ttsPlate = (plateStr || '').replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
+    const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${ttsCustomer}, dengan nomor kendaraan ${ttsPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
+    triggerTTS(textToSpeak);
   };
 
   // 3. Text-to-Speech (TTS) Voice Callout for "SELESAI DIKERJAKAN"
@@ -309,23 +309,27 @@ const RuangTungguContainer = () => {
         <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${isLiveSource ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
           {isLiveSource ? `📡 LIVE (${lastUpdated})` : '⏳ Menunggu data...'}
         </span>
-        <button
-          onClick={() => setCurrentView(currentView === 'media' ? 'proses' : 'media')}
-          className="text-[10px] font-bold px-2 py-0.5 rounded bg-toyota-red hover:bg-toyota-red-dark text-white transition-colors"
-        >
-          SWITCH
-        </button>
-        {/* TEST POPUP BUTTON */}
-        <button
-          onClick={() => {
-            const testVeh = { customer: 'BAPAK BUDI (TEST)', plate: 'BM 9999 TOYOTA' };
-            setCalloutVehicle(testVeh);
-            playTtsCallout(testVeh.customer, testVeh.plate);
-          }}
-          className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors border border-emerald-400"
-        >
-          TEST POPUP
-        </button>
+        {/* Debug Controls — hidden in production display mode */}
+        {import.meta.env.DEV && (
+          <>
+            <button
+              onClick={() => setCurrentView(currentView === 'media' ? 'proses' : 'media')}
+              className="text-[10px] font-bold px-2 py-0.5 rounded bg-toyota-red hover:bg-toyota-red-dark text-white transition-colors"
+            >
+              SWITCH
+            </button>
+            <button
+              onClick={() => {
+                const testVeh = { customer: 'BAPAK BUDI (TEST)', plate: 'BM 9999 TOYOTA' };
+                setCalloutVehicle(testVeh);
+                playTtsCallout(testVeh.customer, testVeh.plate);
+              }}
+              className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors border border-emerald-400"
+            >
+              TEST POPUP
+            </button>
+          </>
+        )}
       </div>
 
       {/* Auto Carousel View Render */}

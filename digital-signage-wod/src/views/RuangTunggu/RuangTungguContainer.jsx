@@ -203,59 +203,104 @@ const RuangTungguContainer = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Primary Audio Context & SpeechSynthesis unlocker for Xiaomi Android TV (BrowsHere)
+  useEffect(() => {
+    const unlockAudioContext = () => {
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.resume();
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('keydown', unlockAudioContext, { once: true });
+    window.addEventListener('click', unlockAudioContext, { once: true });
+
+    return () => {
+      window.removeEventListener('keydown', unlockAudioContext);
+      window.removeEventListener('click', unlockAudioContext);
+    };
+  }, []);
+
+  // Helper function for Android TV compatible TTS voice playback
+  const playTtsCallout = (customerName, plateStr) => {
+    if (!('speechSynthesis' in window)) return;
+
+    try {
+      // 1. Selalu panggil cancel() sebelum mengucapkan kata baru
+      window.speechSynthesis.cancel();
+
+      const ttsCustomer = (customerName || '').toLowerCase();
+      const ttsPlate = (plateStr || '').replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
+      const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${ttsCustomer}, dengan nomor kendaraan ${ttsPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
+
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = 'id-ID';
+      utterance.rate = 0.9;
+
+      const assignVoice = () => {
+        const voices = window.speechSynthesis.getVoices();
+        const idVoice = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
+        if (idVoice) {
+          utterance.voice = idVoice;
+        }
+      };
+
+      assignVoice();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = assignVoice;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn('TTS playback deferred or interrupted by browser policy:', err);
+    }
+  };
+
   // 3. Text-to-Speech (TTS) Voice Callout for "SELESAI DIKERJAKAN"
   useEffect(() => {
     if (!('speechSynthesis' in window)) return;
 
     const completed = vehicles.filter(
-      (v) => v.status.includes('SELESAI')
+      (v) => v.status && v.status.includes('SELESAI')
     );
 
     completed.forEach((v) => {
       if (!spokenPlatesRef.current.has(v.plate)) {
         spokenPlatesRef.current.add(v.plate);
 
-        // Tampilkan Visual Alert
+        // Tampilkan Visual Alert Modal
         setCalloutVehicle(v);
-        // Sembunyikan alert setelah 12 detik (estimasi lama TTS membaca teks)
         setTimeout(() => {
           setCalloutVehicle(null);
         }, 12000);
 
-        // Format untuk TTS agar ejaan lebih natural
-        const ttsCustomer = v.customer.toLowerCase(); // Huruf kecil agar tidak dieja per-huruf
-        const ttsPlate = v.plate.replace(/-/g, '').split('').join(' '); // Pisahkan per karakter agar dibaca digit-per-digit
-
-        const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${ttsCustomer}, dengan nomor kendaraan ${ttsPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
-
-        const utterance = new SpeechSynthesisUtterance(textToSpeak);
-        utterance.lang = 'id-ID';
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
+        playTtsCallout(v.customer, v.plate);
       }
     });
   }, [vehicles]);
 
   // Filtered Vehicle Lists for View Components
   const waitingVehicles = vehicles.filter(
-    (v) => v.status.includes('MENUNGGU')
+    (v) => v.status && v.status.includes('MENUNGGU')
   );
   const completedVehicles = vehicles.filter(
-    (v) => v.status.includes('SELESAI')
+    (v) => v.status && v.status.includes('SELESAI')
   );
   const inProgressVehicles = vehicles.filter(
     (v) =>
-      v.status.includes('PROSES') ||
-      v.status.includes('CUCI') ||
-      v.status.includes('PEMBERSIHAN')
+      v.status &&
+      (v.status.includes('PROSES') ||
+        v.status.includes('CUCI') ||
+        v.status.includes('PEMBERSIHAN'))
   );
   const tomorrowVehicles = vehicles.filter(
-    (v) => v.status.includes('BESOK') || v.status.includes('DILANJUT')
+    (v) => v.status && (v.status.includes('BESOK') || v.status.includes('DILANJUT'))
   );
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-white">
-      {/* Debug Banner — shows data source status (hidden on production) */}
+    <div className="relative w-screen h-screen overflow-hidden select-none bg-slate-100 flex flex-col">
+      {/* Debug Banner — shows data source status */}
       <div className="absolute top-2 right-2 z-50 flex items-center gap-2 bg-white/95 border border-gray-200 px-3 py-1 rounded-full text-xs shadow-sm">
         <span className="flex items-center gap-1.5 font-bold text-[11px] text-gray-600">
           <span className={`w-2 h-2 rounded-full ${isLiveSource ? 'bg-green-500' : 'bg-amber-500'} animate-pulse-dot`}></span>
@@ -270,22 +315,12 @@ const RuangTungguContainer = () => {
         >
           SWITCH
         </button>
-        {/* TEMPORARY MOCK TEST BUTTON */}
+        {/* TEST POPUP BUTTON */}
         <button
           onClick={() => {
-            setCalloutVehicle({ customer: 'BAPAK BUDI (TEST)', plate: 'BM 9999 TOYOTA' });
-            setTimeout(() => setCalloutVehicle(null), 12000);
-
-            // Test TTS (Voice) as well
-            if ('speechSynthesis' in window) {
-              const ttsCustomerTest = 'Bapak Budi (Test)'.toLowerCase();
-              const ttsPlateTest = 'BM 9999 TOYOTA'.replace(/-/g, '').split('').join(' ');
-              const textToSpeak = `Panggilan untuk pelanggan Toyota, ${ttsCustomerTest}, dengan nomor kendaraan ${ttsPlateTest}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
-              const utterance = new SpeechSynthesisUtterance(textToSpeak);
-              utterance.lang = 'id-ID';
-              utterance.rate = 0.9;
-              window.speechSynthesis.speak(utterance);
-            }
+            const testVeh = { customer: 'BAPAK BUDI (TEST)', plate: 'BM 9999 TOYOTA' };
+            setCalloutVehicle(testVeh);
+            playTtsCallout(testVeh.customer, testVeh.plate);
           }}
           className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors border border-emerald-400"
         >
@@ -294,7 +329,7 @@ const RuangTungguContainer = () => {
       </div>
 
       {/* Auto Carousel View Render */}
-      <div key={currentView} className="w-full h-full animate-fade-in">
+      <div key={currentView} className="w-full h-full animate-fade-in flex-1 min-h-0">
         {currentView === 'media' ? (
           <ViewMedia
             waitingVehicles={waitingVehicles}
@@ -307,7 +342,7 @@ const RuangTungguContainer = () => {
       </div>
 
       {/* Full-Screen Visual Alert Callout */}
-      <CalloutAlert vehicle={calloutVehicle} />
+      <CalloutAlert vehicle={calloutVehicle} onClose={() => setCalloutVehicle(null)} />
     </div>
   );
 };

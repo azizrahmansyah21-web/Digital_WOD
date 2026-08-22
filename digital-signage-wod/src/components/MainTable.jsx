@@ -125,34 +125,34 @@ const MainTable = ({ vehicles = [], inProgressVehicles = [] }) => {
         <style>{`.flex-1::-webkit-scrollbar { display: none; }`}</style>
         <table className="w-full text-left text-sm border-collapse">
           <thead>
-            <tr className="bg-cyan-600 text-white text-sm font-black tracking-wider sticky top-0 z-10 shadow-md">
-              <th className="py-5 px-5 w-[4%] text-center border-b border-cyan-700">#</th>
-              <th className="py-5 px-5 w-[15%] border-b border-cyan-700">NO POLISI</th>
-              <th className="py-5 px-5 w-[25%] border-b border-cyan-700">NAMA PELANGGAN</th>
-              <th className="py-5 px-5 w-[10%] text-center border-b border-cyan-700">MULAI</th>
-              <th className="py-5 px-5 w-[10%] text-center border-b border-cyan-700">EST. SELESAI</th>
-              <th className="py-5 px-5 w-[22%] text-center border-b border-cyan-700">STATUS PROGRESS</th>
-              <th className="py-5 px-5 w-[14%] text-center border-b border-cyan-700">SERVICE ADVISOR</th>
+            <tr className="bg-cyan-600 text-white text-xs md:text-sm font-black tracking-wider sticky top-0 z-10 shadow-md">
+              <th className="py-3.5 px-4 w-[4%] text-center border-b border-cyan-700">#</th>
+              <th className="py-3.5 px-4 w-[16%] border-b border-cyan-700">NO POLISI</th>
+              <th className="py-3.5 px-4 w-[26%] border-b border-cyan-700">NAMA PELANGGAN</th>
+              <th className="py-3.5 px-4 w-[10%] text-center border-b border-cyan-700">MULAI</th>
+              <th className="py-3.5 px-4 w-[10%] text-center border-b border-cyan-700">EST. SELESAI</th>
+              <th className="py-3.5 px-4 w-[20%] text-center border-b border-cyan-700">STATUS PROGRESS</th>
+              <th className="py-3.5 px-4 w-[14%] text-center border-b border-cyan-700">SERVICE ADVISOR</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 ">
+          <tbody className="divide-y divide-gray-100">
             {displayData.length > 0 ? (
               displayData.map((row, idx) => (
                 <tr key={row.id || idx} className="hover:bg-blue-50/80 transition-colors even:bg-gray-50/60 bg-white">
-                  <td className="py-4 px-5 text-center text-base font-bold text-gray-400">{idx + 1}</td>
-                  <td className="py-4 px-5">
-                    <PlateNumber plate={row.plate} className="text-xl px-4 py-1.5 w-[160px]" />
+                  <td className="py-3 px-4 text-center text-sm font-bold text-gray-400">{idx + 1}</td>
+                  <td className="py-3 px-4">
+                    <PlateNumber plate={row.plate} className="text-lg px-3 py-1 w-[150px] justify-between" />
                   </td>
-                  <td className="py-4 px-5 font-black text-gray-900 text-lg uppercase tracking-wide">{row.customer}</td>
-                  <td className="py-4 px-5 text-center font-bold text-gray-600 text-base">{row.startTime || '-'}</td>
-                  <td className="py-4 px-5 text-center font-bold text-emerald-700 text-base">{row.estTime || '-'}</td>
-                  <td className="py-4 px-5 text-center">{getStatusBadge(row.status)}</td>
-                  <td className="py-4 px-5 text-center font-bold text-gray-700 text-base">{row.advisor || '-'}</td>
+                  <td className="py-3 px-4 font-black text-gray-900 text-base md:text-lg uppercase tracking-wide truncate">{row.customer}</td>
+                  <td className="py-3 px-4 text-center font-bold text-gray-600 text-sm md:text-base">{row.startTime || '-'}</td>
+                  <td className="py-3 px-4 text-center font-bold text-emerald-700 text-sm md:text-base">{row.estTime || '-'}</td>
+                  <td className="py-3 px-4 text-center">{getStatusBadge(row.status)}</td>
+                  <td className="py-3 px-4 text-center font-bold text-gray-700 text-sm md:text-base">{row.advisor || '-'}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="7" className="py-16 text-center text-lg text-gray-400 font-bold">
+                <td colSpan="7" className="py-16 text-center text-base md:text-lg text-gray-400 font-bold">
                   Belum ada kendaraan dalam proses perbaikan saat ini
                 </td>
               </tr>

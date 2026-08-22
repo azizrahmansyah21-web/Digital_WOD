@@ -309,27 +309,22 @@ const RuangTungguContainer = () => {
         <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${isLiveSource ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
           {isLiveSource ? `📡 LIVE (${lastUpdated})` : '⏳ Menunggu data...'}
         </span>
-        {/* Debug Controls — hidden in production display mode */}
-        {import.meta.env.DEV && (
-          <>
-            <button
-              onClick={() => setCurrentView(currentView === 'media' ? 'proses' : 'media')}
-              className="text-[10px] font-bold px-2 py-0.5 rounded bg-toyota-red hover:bg-toyota-red-dark text-white transition-colors"
-            >
-              SWITCH
-            </button>
-            <button
-              onClick={() => {
-                const testVeh = { customer: 'BAPAK BUDI (TEST)', plate: 'BM 9999 TOYOTA' };
-                setCalloutVehicle(testVeh);
-                playTtsCallout(testVeh.customer, testVeh.plate);
-              }}
-              className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors border border-emerald-400"
-            >
-              TEST POPUP
-            </button>
-          </>
-        )}
+        <button
+          onClick={() => setCurrentView(currentView === 'media' ? 'proses' : 'media')}
+          className="text-[10px] font-bold px-2 py-0.5 rounded bg-toyota-red hover:bg-toyota-red-dark text-white transition-colors"
+        >
+          SWITCH
+        </button>
+        <button
+          onClick={() => {
+            const testVeh = { customer: 'BAPAK BUDI (TEST)', plate: 'BM 9999 TOYOTA' };
+            setCalloutVehicle(testVeh);
+            playTtsCallout(testVeh.customer, testVeh.plate);
+          }}
+          className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors border border-emerald-400"
+        >
+          TEST POPUP
+        </button>
       </div>
 
       {/* Auto Carousel View Render */}

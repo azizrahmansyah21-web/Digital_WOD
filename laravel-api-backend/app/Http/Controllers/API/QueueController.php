@@ -53,7 +53,9 @@ class QueueController extends Controller
         @$dom->loadHTML($html);
         $xpath = new DOMXPath($dom);
 
-        // Find table rows
+        // ═══════════════════════════════════════════════════════════════
+        // SECTION 1: Parse Main Table Rows (PROSES PERBAIKAN & TUNGGU CUCI)
+        // ═══════════════════════════════════════════════════════════════
         $rows = $xpath->query('//table//tr');
 
         if ($rows && $rows->length > 0) {
@@ -73,12 +75,12 @@ class QueueController extends Controller
                     $status = trim(preg_replace('/\s+/', ' ', $cells->item(4)->textContent));
                     $advisor = trim(preg_replace('/\s+/', ' ', $cells->item(5)->textContent));
 
-                    if (!empty($plateRaw)) {
+                    if (!empty($plateRaw) && strlen($plateRaw) >= 3 && !str_contains($plateRaw, 'Tidak ada kendaraan')) {
                         // Format plate number (convert "BM-1893-PX" to "BM 1893 PX")
                         $formattedPlate = str_replace('-', ' ', $plateRaw);
 
                         $parsed[] = [
-                            'id' => $idCounter++,
+                            'id' => 'tbl-' . ($idCounter++),
                             'plate' => $formattedPlate,
                             'customer' => $customer,
                             'startTime' => $startTime,
@@ -86,6 +88,82 @@ class QueueController extends Controller
                             'status' => strtoupper($status),
                             'advisor' => $advisor
                         ];
+                    }
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // SECTION 2: Parse Bottom Card Sections (MENUNGGU, SELESAI, BESOK)
+        // ═══════════════════════════════════════════════════════════════
+        $h3s = $xpath->query('//h3');
+        if ($h3s && $h3s->length > 0) {
+            foreach ($h3s as $h3) {
+                $title = strtoupper(trim($h3->textContent));
+
+                $statusName = '';
+                $statusKey = '';
+                $estTimeVal = '-';
+
+                if (str_contains($title, 'SELESAI DIKERJAKAN')) {
+                    $statusName = 'SELESAI DIKERJAKAN';
+                    $statusKey = 'c';
+                    $estTimeVal = 'SELESAI';
+                } elseif (str_contains($title, 'MENUNGGU DIKERJAKAN')) {
+                    $statusName = 'MENUNGGU DIKERJAKAN';
+                    $statusKey = 'w';
+                } elseif (str_contains($title, 'PERBAIKAN DILANJUT BESOK')) {
+                    $statusName = 'PERBAIKAN DILANJUT BESOK';
+                    $statusKey = 'b';
+                } else {
+                    continue;
+                }
+
+                $panelNode = $xpath->query('./ancestor::div[contains(@class, "rounded-2xl")]', $h3);
+                if ($panelNode->length === 0) continue;
+
+                $itemsContainer = $xpath->query('.//div[contains(@class, "space-y-2")]', $panelNode->item(0));
+                if ($itemsContainer->length === 0) continue;
+
+                $items = $xpath->query('./div', $itemsContainer->item(0));
+                foreach ($items as $idx => $item) {
+                    $spans = $xpath->query('.//span', $item);
+                    if ($spans->length >= 2) {
+                        $plateRaw = trim($spans->item(0)->textContent);
+                        $customer = trim($spans->item(1)->textContent);
+
+                        if (
+                            !empty($plateRaw) &&
+                            !empty($customer) &&
+                            $plateRaw !== 'Kosong' &&
+                            !str_contains($plateRaw, 'Vehicle') &&
+                            !str_contains($plateRaw, 'DIKERJAKAN') &&
+                            !str_contains($plateRaw, 'BESOK') &&
+                            strlen($plateRaw) >= 3 &&
+                            strlen($plateRaw) <= 20
+                        ) {
+                            $formattedPlate = str_replace('-', ' ', $plateRaw);
+
+                            $exists = false;
+                            foreach ($parsed as $v) {
+                                if ($v['plate'] === $formattedPlate) {
+                                    $exists = true;
+                                    break;
+                                }
+                            }
+
+                            if (!$exists) {
+                                $parsed[] = [
+                                    'id' => $statusKey . '-' . $idx,
+                                    'plate' => $formattedPlate,
+                                    'customer' => $customer,
+                                    'startTime' => '-',
+                                    'estTime' => $estTimeVal,
+                                    'status' => $statusName,
+                                    'advisor' => '-'
+                                ];
+                            }
+                        }
                     }
                 }
             }

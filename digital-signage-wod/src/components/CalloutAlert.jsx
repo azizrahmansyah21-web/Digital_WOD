@@ -1,132 +1,151 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+
+// Module-level audio reference to ensure ONLY ONE audio plays at any given time across all renders
+let globalAudioInstance = null;
+
+const stopGlobalAudio = () => {
+  if ('speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch (e) {}
+  }
+  if (globalAudioInstance) {
+    try {
+      globalAudioInstance.pause();
+      globalAudioInstance.currentTime = 0;
+    } catch (e) {}
+    globalAudioInstance = null;
+  }
+};
 
 const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) => {
   const custName = customerName || vehicle?.customer;
   const plateNo = plateNumber || vehicle?.plate;
   const active = isOpen !== undefined ? (isOpen && Boolean(custName)) : Boolean(vehicle);
 
+  const lastPlayedKeyRef = useRef('');
+
   useEffect(() => {
-    if (active && custName && plateNo) {
-      // Remote D-Pad / OK / Back key handling for Xiaomi Android TV (BrowsHere)
-      const handleRemoteKey = (e) => {
-        if (
-          ['Enter', 'Escape', 'Backspace', ' ', 'GoBack'].includes(e.key) ||
-          e.keyCode === 13 ||
-          e.keyCode === 27 ||
-          e.keyCode === 8
-        ) {
-          if (onClose) onClose();
-        }
-      };
+    if (!active || !custName || !plateNo) {
+      stopGlobalAudio();
+      lastPlayedKeyRef.current = '';
+      return;
+    }
 
-      window.addEventListener('keydown', handleRemoteKey);
+    const currentKey = `${custName}-${plateNo}`;
+    if (lastPlayedKeyRef.current === currentKey) {
+      return; // Audio already initiated for this active callout
+    }
+    lastPlayedKeyRef.current = currentKey;
 
-      let audioObj = null;
-      let speechUtterance = null;
-      let hasPlayedBackend = false;
-      let fallbackTimer = null;
+    // 1. Stop any currently playing audio immediately
+    stopGlobalAudio();
 
-      const formatPlateForSpeech = (plate) => {
-        if (!plate) return '';
-        return plate.replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
-      };
+    let hasPlayedAnyAudio = false;
+    let fallbackTimer = null;
 
-      const playBackendAudio = () => {
-        if (hasPlayedBackend) return;
-        hasPlayedBackend = true;
+    const playBackendAudio = () => {
+      if (hasPlayedAnyAudio) return;
+      hasPlayedAnyAudio = true;
 
-        try {
-          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-          const message = `Panggilan kepada Bapak atau Ibu ${custName}, nomor polisi ${plateNo}, kendaraan Anda telah selesai dikerjakan.`;
-          const audioUrl = `${apiUrl}/tts?text=${encodeURIComponent(message)}`;
+      stopGlobalAudio();
 
-          audioObj = new Audio(audioUrl);
-          audioObj.volume = 1.0;
-          audioObj.play().catch((err) => {
-            console.warn("Autoplay terblokir oleh browser TV:", err);
-          });
-        } catch (err) {
-          console.warn("Gagal memutar audio backend TTS:", err);
-        }
-      };
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || '/api';
+        const message = `Panggilan kepada Bapak atau Ibu ${custName}, nomor polisi ${plateNo}, kendaraan Anda telah selesai dikerjakan.`;
+        const audioUrl = `${apiUrl}/tts?text=${encodeURIComponent(message)}`;
 
-      // Hentikan suara yang sedang berjalan sebelum memulai pemanggilan baru
-      if ('speechSynthesis' in window) {
-        try {
-          window.speechSynthesis.cancel();
-        } catch (e) { }
+        const audioObj = new Audio(audioUrl);
+        audioObj.volume = 1.0;
+        globalAudioInstance = audioObj;
+
+        audioObj.play().catch((err) => {
+          console.warn("Autoplay terblokir oleh browser TV:", err);
+        });
+      } catch (err) {
+        console.warn("Gagal memutar audio backend TTS:", err);
       }
+    };
 
-      // Prioritas 1: Gunakan Web Speech API jika didukung oleh browser
-      if ('speechSynthesis' in window) {
-        try {
-          const formattedPlate = formatPlateForSpeech(plateNo);
-          const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${custName}, dengan nomor kendaraan ${formattedPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
+    // Prioritas 1: Gunakan Web Speech API jika didukung
+    if ('speechSynthesis' in window) {
+      try {
+        const formattedPlate = plateNo.replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
+        const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${custName}, dengan nomor kendaraan ${formattedPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
 
-          speechUtterance = new SpeechSynthesisUtterance(textToSpeak);
-          speechUtterance.lang = 'id-ID';
-          speechUtterance.rate = 0.9;
+        const speechUtterance = new SpeechSynthesisUtterance(textToSpeak);
+        speechUtterance.lang = 'id-ID';
+        speechUtterance.rate = 0.9;
 
-          let voices = window.speechSynthesis.getVoices();
-          const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
-          if (idV) speechUtterance.voice = idV;
+        const voices = window.speechSynthesis.getVoices();
+        const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
+        if (idV) speechUtterance.voice = idV;
 
-          let isSpeakingStarted = false;
+        let isSpeakingStarted = false;
 
-          speechUtterance.onstart = () => {
-            isSpeakingStarted = true;
-            if (fallbackTimer) clearTimeout(fallbackTimer);
-          };
+        speechUtterance.onstart = () => {
+          isSpeakingStarted = true;
+          hasPlayedAnyAudio = true;
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+        };
 
-          speechUtterance.onerror = (e) => {
-            console.warn("SpeechSynthesis error, memutar fallback backend TTS:", e);
-            if (fallbackTimer) clearTimeout(fallbackTimer);
-            playBackendAudio();
-          };
+        speechUtterance.onerror = (e) => {
+          // Abaikan error 'canceled' / 'interrupted' yang dipemicu oleh penutupan modal / cleanup
+          if (e.error === 'canceled' || e.error === 'interrupted') return;
 
-          window.speechSynthesis.speak(speechUtterance);
-
-          // Fallback timer: jika Web Speech API tidak memicu onstart dalam 1.5 detik (misal browser TV tanpa mesin suara id-ID), gunakan backend TTS
-          fallbackTimer = setTimeout(() => {
-            if (!isSpeakingStarted && !window.speechSynthesis.speaking) {
-              playBackendAudio();
-            }
-          }, 1500);
-
-        } catch (err) {
-          console.warn("SpeechSynthesis gagal, gunakan fallback backend TTS:", err);
+          console.warn("SpeechSynthesis error, memutar fallback backend TTS:", e);
+          if (fallbackTimer) clearTimeout(fallbackTimer);
           playBackendAudio();
-        }
-      } else {
-        // Jika browser tidak mendukung Web Speech API -> langsung pakai backend TTS
+        };
+
+        speechUtterance.onend = () => {
+          hasPlayedAnyAudio = true;
+        };
+
+        window.speechSynthesis.speak(speechUtterance);
+
+        // Fallback timer: Jika Web Speech API tidak memicu onstart dalam 1.2 detik, switch ke Backend TTS
+        fallbackTimer = setTimeout(() => {
+          if (!isSpeakingStarted && !hasPlayedAnyAudio) {
+            console.warn("Web Speech API tidak merespons, switch ke backend TTS");
+            playBackendAudio();
+          }
+        }, 1200);
+
+      } catch (err) {
+        console.warn("SpeechSynthesis gagal, gunakan fallback backend TTS:", err);
         playBackendAudio();
       }
-
-      // 2. Auto-close modal setelah 10 detik
-      const timer = setTimeout(() => {
-        if (onClose) onClose();
-      }, 10000);
-
-      return () => {
-        window.removeEventListener('keydown', handleRemoteKey);
-        clearTimeout(timer);
-        if (fallbackTimer) clearTimeout(fallbackTimer);
-
-        // Hentikan semua suara ketika pop up ditutup
-        if ('speechSynthesis' in window) {
-          try {
-            window.speechSynthesis.cancel();
-          } catch (e) { }
-        }
-        if (audioObj) {
-          try {
-            audioObj.pause();
-            audioObj.currentTime = 0;
-          } catch (e) { }
-        }
-      };
+    } else {
+      playBackendAudio();
     }
-  }, [active, custName, plateNo, onClose]);
+
+    // Remote D-Pad / OK / Back key handling for Xiaomi Android TV (BrowsHere)
+    const handleRemoteKey = (e) => {
+      if (
+        ['Enter', 'Escape', 'Backspace', ' ', 'GoBack'].includes(e.key) ||
+        e.keyCode === 13 ||
+        e.keyCode === 27 ||
+        e.keyCode === 8
+      ) {
+        if (onClose) onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleRemoteKey);
+
+    // Auto-close modal setelah 10 detik
+    const timer = setTimeout(() => {
+      if (onClose) onClose();
+    }, 10000);
+
+    return () => {
+      window.removeEventListener('keydown', handleRemoteKey);
+      clearTimeout(timer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      stopGlobalAudio();
+    };
+  }, [active, custName, plateNo]);
 
   if (!active || !custName || !plateNo) return null;
 

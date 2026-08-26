@@ -1,5 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Radio+Canada+Big:ital,wght@0,400..700;1,400..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 @theme {
   --color-toyota-red: #eb0a1e;
@@ -11,8 +11,9 @@
   --color-text-secondary: #6c6c6c;
   --color-border: #dbe0ec;
   --color-border-light: #dbe0ec;
-  --font-radio: 'Radio Canada Big', sans-serif;
-  --font-roboto: 'Radio Canada Big', 'Roboto', sans-serif;
+  --font-jakarta: 'Plus Jakarta Sans', sans-serif;
+  --font-radio: 'Plus Jakarta Sans', 'Roboto', sans-serif;
+  --font-roboto: 'Plus Jakarta Sans', 'Roboto', sans-serif;
   --font-plate: 'FE-Font', monospace;
 }
 
@@ -27,8 +28,9 @@
   font-family: var(--font-plate);
 }
 
+.font-jakarta,
 .font-radio {
-  font-family: 'Radio Canada Big', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Roboto', sans-serif;
 }
 
 .bg-gradient-accent {
@@ -36,8 +38,13 @@
 }
 
 @keyframes marquee {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .animate-marquee {
@@ -52,21 +59,30 @@
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .animate-pulse-dot {
   animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   width: 100vw;
   height: 100vh;
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: 'Radio Canada Big', 'Roboto', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Roboto', sans-serif;
   font-optical-sizing: auto;
   font-style: normal;
   background-color: #ffffff;
@@ -77,8 +93,13 @@ html, body, #root {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {

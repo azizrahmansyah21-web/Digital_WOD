@@ -21,16 +21,86 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
 
       window.addEventListener('keydown', handleRemoteKey);
 
-      // 1. Play Audio Stream via Backend Laravel Endpoint (/api/tts)
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const message = `Panggilan kepada Bapak ${custName}, nomor polisi ${plateNo}, kendaraan Anda telah selesai dikerjakan.`;
-      const audioUrl = `${apiUrl}/tts?text=${encodeURIComponent(message)}`;
-      
-      const audio = new Audio(audioUrl);
-      audio.volume = 1.0;
-      audio.play().catch((err) => {
-        console.warn("Autoplay terblokir oleh browser TV:", err);
-      });
+      let audioObj = null;
+      let speechUtterance = null;
+      let hasPlayedBackend = false;
+      let fallbackTimer = null;
+
+      const formatPlateForSpeech = (plate) => {
+        if (!plate) return '';
+        return plate.replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
+      };
+
+      const playBackendAudio = () => {
+        if (hasPlayedBackend) return;
+        hasPlayedBackend = true;
+
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+          const message = `Panggilan kepada Bapak atau Ibu ${custName}, nomor polisi ${plateNo}, kendaraan Anda telah selesai dikerjakan.`;
+          const audioUrl = `${apiUrl}/tts?text=${encodeURIComponent(message)}`;
+          
+          audioObj = new Audio(audioUrl);
+          audioObj.volume = 1.0;
+          audioObj.play().catch((err) => {
+            console.warn("Autoplay terblokir oleh browser TV:", err);
+          });
+        } catch (err) {
+          console.warn("Gagal memutar audio backend TTS:", err);
+        }
+      };
+
+      // Hentikan suara yang sedang berjalan sebelum memulai pemanggilan baru
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (e) {}
+      }
+
+      // Prioritas 1: Gunakan Web Speech API jika didukung oleh browser
+      if ('speechSynthesis' in window) {
+        try {
+          const formattedPlate = formatPlateForSpeech(plateNo);
+          const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${custName}, dengan nomor kendaraan ${formattedPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
+          
+          speechUtterance = new SpeechSynthesisUtterance(textToSpeak);
+          speechUtterance.lang = 'id-ID';
+          speechUtterance.rate = 0.9;
+
+          let voices = window.speechSynthesis.getVoices();
+          const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
+          if (idV) speechUtterance.voice = idV;
+
+          let isSpeakingStarted = false;
+
+          speechUtterance.onstart = () => {
+            isSpeakingStarted = true;
+            if (fallbackTimer) clearTimeout(fallbackTimer);
+          };
+
+          speechUtterance.onerror = (e) => {
+            console.warn("SpeechSynthesis error, memutar fallback backend TTS:", e);
+            if (fallbackTimer) clearTimeout(fallbackTimer);
+            playBackendAudio();
+          };
+
+          window.speechSynthesis.speak(speechUtterance);
+
+          // Fallback timer: jika Web Speech API tidak memicu onstart dalam 1.5 detik (misal browser TV tanpa mesin suara id-ID), gunakan backend TTS
+          fallbackTimer = setTimeout(() => {
+            if (!isSpeakingStarted && !window.speechSynthesis.speaking) {
+              playBackendAudio();
+            }
+          }, 1500);
+
+        } catch (err) {
+          console.warn("SpeechSynthesis gagal, gunakan fallback backend TTS:", err);
+          playBackendAudio();
+        }
+      } else {
+        // Jika browser tidak mendukung Web Speech API -> langsung pakai backend TTS
+        playBackendAudio();
+      }
 
       // 2. Auto-close modal setelah 10 detik
       const timer = setTimeout(() => {
@@ -40,7 +110,20 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
       return () => {
         window.removeEventListener('keydown', handleRemoteKey);
         clearTimeout(timer);
-        audio.pause();
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        
+        // Hentikan semua suara ketika pop up ditutup
+        if ('speechSynthesis' in window) {
+          try {
+            window.speechSynthesis.cancel();
+          } catch (e) {}
+        }
+        if (audioObj) {
+          try {
+            audioObj.pause();
+            audioObj.currentTime = 0;
+          } catch (e) {}
+        }
       };
     }
   }, [active, custName, plateNo, onClose]);

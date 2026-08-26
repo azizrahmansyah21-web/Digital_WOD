@@ -222,45 +222,9 @@ const RuangTungguContainer = () => {
     };
   }, []);
 
-  // Audio Speech TTS Engine Helper with getVoices() slow load fallback
-  const triggerTTS = (text) => {
-    if (!('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const msg = new SpeechSynthesisUtterance(text);
-      msg.lang = 'id-ID';
-      msg.rate = 0.9;
-
-      let voices = window.speechSynthesis.getVoices();
-      if (voices.length === 0) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          voices = window.speechSynthesis.getVoices();
-          const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
-          if (idV) msg.voice = idV;
-          window.speechSynthesis.speak(msg);
-        };
-      } else {
-        const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
-        if (idV) msg.voice = idV;
-        window.speechSynthesis.speak(msg);
-      }
-    } catch (err) {
-      console.warn('TTS playback deferred or interrupted by browser policy:', err);
-    }
-  };
-
-  // Helper function for vehicle callout string formatting
-  const playTtsCallout = (customerName, plateStr) => {
-    const ttsCustomer = (customerName || '').toLowerCase();
-    const ttsPlate = (plateStr || '').replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
-    const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${ttsCustomer}, dengan nomor kendaraan ${ttsPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
-    triggerTTS(textToSpeak);
-  };
 
   // 3. Text-to-Speech (TTS) Voice Callout for "SELESAI DIKERJAKAN"
   useEffect(() => {
-    if (!('speechSynthesis' in window)) return;
-
     const completed = vehicles.filter(
       (v) => v.status && v.status.includes('SELESAI')
     );
@@ -269,13 +233,11 @@ const RuangTungguContainer = () => {
       if (!spokenPlatesRef.current.has(v.plate)) {
         spokenPlatesRef.current.add(v.plate);
 
-        // Tampilkan Visual Alert Modal
+        // Tampilkan Visual Alert Modal (audio diputar otomatis oleh komponen CalloutAlert)
         setCalloutVehicle(v);
         setTimeout(() => {
           setCalloutVehicle(null);
         }, 12000);
-
-        playTtsCallout(v.customer, v.plate);
       }
     });
   }, [vehicles]);
@@ -319,7 +281,6 @@ const RuangTungguContainer = () => {
           onClick={() => {
             const testVeh = { customer: 'BAPAK BUDI (TEST)', plate: 'BM 9999 TOYOTA' };
             setCalloutVehicle(testVeh);
-            playTtsCallout(testVeh.customer, testVeh.plate);
           }}
           className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors border border-emerald-400"
         >

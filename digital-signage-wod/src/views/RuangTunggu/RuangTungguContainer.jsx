@@ -183,7 +183,7 @@ const RuangTungguContainer = () => {
       if ('speechSynthesis' in window) {
         try {
           window.speechSynthesis.resume();
-        } catch (e) {}
+        } catch (e) { }
       }
     };
 
@@ -236,7 +236,7 @@ const RuangTungguContainer = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden select-none bg-slate-100 flex flex-col">
-      {/* Debug Banner — shows data source status */}
+      {/* Debug Banner — shows data source status
       <div className="absolute top-2 right-2 z-50 flex items-center gap-2 bg-white/95 border border-gray-200 px-3 py-1 rounded-full text-xs shadow-sm">
         <span className="flex items-center gap-1.5 font-bold text-[11px] text-gray-600">
           <span className={`w-2 h-2 rounded-full ${isLiveSource ? 'bg-green-500' : 'bg-amber-500'} animate-pulse-dot`}></span>
@@ -260,7 +260,7 @@ const RuangTungguContainer = () => {
         >
           TEST POPUP
         </button>
-      </div>
+      </div> */}
 
       {/* Auto Carousel View Render */}
       <div key={currentView} className="w-full h-full animate-fade-in flex-1 min-h-0">

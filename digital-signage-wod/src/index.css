@@ -1,18 +1,18 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Radio+Canada+Big:ital,wght@0,400..700;1,400..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 @theme {
   --color-toyota-red: #eb0a1e;
   --color-toyota-red-dark: #c5091a;
   --color-surface: #ffffff;
-  --color-surface-alt: #f8f9fa;
-  --color-surface-card: #f1f3f5;
-  --color-text-primary: #1a1a2e;
-  --color-text-secondary: #495057;
-  --color-text-muted: #868e96;
-  --color-border: #dee2e6;
-  --color-border-light: #e9ecef;
-  --font-roboto: 'Roboto', sans-serif;
+  --color-surface-alt: #f6f8fb;
+  --color-surface-card: #f6f8fb;
+  --color-text-primary: #000000;
+  --color-text-secondary: #6c6c6c;
+  --color-border: #dbe0ec;
+  --color-border-light: #dbe0ec;
+  --font-radio: 'Radio Canada Big', sans-serif;
+  --font-roboto: 'Radio Canada Big', 'Roboto', sans-serif;
   --font-plate: 'FE-Font', monospace;
 }
 
@@ -25,6 +25,14 @@
 
 .font-plate {
   font-family: var(--font-plate);
+}
+
+.font-radio {
+  font-family: 'Radio Canada Big', sans-serif;
+}
+
+.bg-gradient-accent {
+  background: linear-gradient(135deg, #A8D3FF 0%, #FFF4DF 100%);
 }
 
 @keyframes marquee {
@@ -52,22 +60,17 @@
   animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
-* {
-  font-weight: 400 !important;
-}
-
 html, body, #root {
   width: 100vw;
   height: 100vh;
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: var(--font-roboto);
+  font-family: 'Radio Canada Big', 'Roboto', sans-serif;
   font-optical-sizing: auto;
   font-style: normal;
-  font-variation-settings: "wdth" 100;
   background-color: #ffffff;
-  color: #1a1a2e;
+  color: #000000;
   user-select: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

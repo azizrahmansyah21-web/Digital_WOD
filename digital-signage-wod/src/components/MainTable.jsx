@@ -96,21 +96,21 @@ const MainTable = ({ vehicles = [], inProgressVehicles = [] }) => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col justify-between overflow-hidden p-4 bg-white text-gray-900">
+    <div className="w-full h-full flex flex-col justify-between overflow-hidden p-3.5 bg-white text-[#000000] font-radio">
       {/* Header Banner - Separate title & status badge */}
-      <div className="flex justify-between items-start pb-3 border-b-2 border-cyan-600 mb-3 shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="bg-white rounded-xl py-0.5 px-2 flex items-center justify-center shrink-0">
-            <img src="/logo-lgb.png" alt="Logo LGB" className="h-14 w-auto object-contain drop-shadow-sm" />
+      <div className="flex justify-between items-center pb-2.5 border-b border-[#DBE0EC] mb-2.5 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="bg-white rounded-lg py-0.5 px-1 flex items-center justify-center shrink-0">
+            <img src="/logo-lgb.png" alt="Toyota Let's Go Beyond" className="h-10 w-auto object-contain drop-shadow-2xs" />
           </div>
           <div className="flex flex-col justify-center">
-            <h1 className="text-2xl font-black tracking-wide text-gray-900 uppercase leading-tight">Maintenance Information Board</h1>
-            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5">Work Operational Display - Agung Toyota</p>
+            <h1 className="text-xl font-black tracking-wide text-[#000000] uppercase leading-tight">Maintenance Information Board</h1>
+            <p className="text-xs font-semibold text-[#6C6C6C] uppercase tracking-widest mt-0.5">Work Operational Display - Agung Toyota</p>
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="flex items-center gap-2 text-xs font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg shadow-sm whitespace-nowrap">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse-dot"></span>
+          <span className="flex items-center gap-2 text-xs font-extrabold text-[#000000] bg-gradient-accent border border-[#DBE0EC] px-3 py-1 rounded-full shadow-2xs whitespace-nowrap">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse-dot"></span>
             AKTIF: {displayData.length} KENDARAAN
           </span>
         </div>
@@ -119,40 +119,40 @@ const MainTable = ({ vehicles = [], inProgressVehicles = [] }) => {
       {/* Full Table */}
       <div 
         ref={scrollRef} 
-        className="flex-1 w-full max-h-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm scroll-smooth"
+        className="flex-1 w-full max-h-full overflow-y-auto rounded-xl border border-[#DBE0EC] bg-white shadow-2xs scroll-smooth"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style>{`.flex-1::-webkit-scrollbar { display: none; }`}</style>
-        <table className="w-full text-left text-sm border-collapse">
+        <table className="w-full text-left text-xs md:text-sm border-collapse">
           <thead>
-            <tr className="bg-cyan-600 text-white text-xs font-black tracking-wider sticky top-0 z-10 shadow-md">
-              <th className="py-2.5 px-3 w-[4%] text-center border-b border-cyan-700">#</th>
-              <th className="py-2.5 px-3 w-[16%] border-b border-cyan-700">NO POLISI</th>
-              <th className="py-2.5 px-3 w-[26%] border-b border-cyan-700">NAMA PELANGGAN</th>
-              <th className="py-2.5 px-3 w-[10%] text-center border-b border-cyan-700">MULAI</th>
-              <th className="py-2.5 px-3 w-[10%] text-center border-b border-cyan-700">EST. SELESAI</th>
-              <th className="py-2.5 px-3 w-[20%] text-center border-b border-cyan-700">STATUS PROGRESS</th>
-              <th className="py-2.5 px-3 w-[14%] text-center border-b border-cyan-700">SERVICE ADVISOR</th>
+            <tr className="bg-[#F6F8FB] text-[#000000] text-xs font-extrabold tracking-wider sticky top-0 z-10 border-b border-[#DBE0EC]">
+              <th className="py-2.5 px-3 w-[4%] text-center border-b border-[#DBE0EC]">#</th>
+              <th className="py-2.5 px-3 w-[16%] border-b border-[#DBE0EC]">NO POLISI</th>
+              <th className="py-2.5 px-3 w-[26%] border-b border-[#DBE0EC]">NAMA PELANGGAN</th>
+              <th className="py-2.5 px-3 w-[10%] text-center border-b border-[#DBE0EC]">MULAI</th>
+              <th className="py-2.5 px-3 w-[10%] text-center border-b border-[#DBE0EC]">EST. SELESAI</th>
+              <th className="py-2.5 px-3 w-[20%] text-center border-b border-[#DBE0EC]">STATUS PROGRESS</th>
+              <th className="py-2.5 px-3 w-[14%] text-center border-b border-[#DBE0EC]">SERVICE ADVISOR</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[#DBE0EC]">
             {displayData.length > 0 ? (
               displayData.map((row, idx) => (
-                <tr key={row.id || idx} className="hover:bg-blue-50/80 transition-colors even:bg-gray-50/60 bg-white">
-                  <td className="py-2 px-3 text-center text-xs font-bold text-gray-400">{idx + 1}</td>
-                  <td className="py-2 px-3">
-                    <PlateNumber plate={row.plate} className="text-base px-2.5 py-0.5 w-[135px] justify-between" />
+                <tr key={row.id || idx} className="hover:bg-[#F6F8FB] transition-colors even:bg-[#F6F8FB]/50 bg-white">
+                  <td className="py-1.5 px-3 text-center text-xs font-bold text-[#6C6C6C]">{idx + 1}</td>
+                  <td className="py-1.5 px-3">
+                    <PlateNumber plate={row.plate} className="text-xs md:text-sm px-2 py-0.5 w-[125px] justify-between" />
                   </td>
-                  <td className="py-2 px-3 font-black text-gray-900 text-sm md:text-base uppercase tracking-wide truncate">{row.customer}</td>
-                  <td className="py-2 px-3 text-center font-bold text-gray-600 text-xs md:text-sm">{row.startTime || '-'}</td>
-                  <td className="py-2 px-3 text-center font-bold text-emerald-700 text-xs md:text-sm">{row.estTime || '-'}</td>
-                  <td className="py-2 px-3 text-center">{getStatusBadge(row.status)}</td>
-                  <td className="py-2 px-3 text-center font-bold text-gray-700 text-xs md:text-sm">{row.advisor || '-'}</td>
+                  <td className="py-1.5 px-3 font-extrabold text-[#000000] text-xs md:text-sm uppercase tracking-wide truncate">{row.customer}</td>
+                  <td className="py-1.5 px-3 text-center font-bold text-[#6C6C6C] text-xs">{row.startTime || '-'}</td>
+                  <td className="py-1.5 px-3 text-center font-extrabold text-emerald-700 text-xs">{row.estTime || '-'}</td>
+                  <td className="py-1.5 px-3 text-center">{getStatusBadge(row.status)}</td>
+                  <td className="py-1.5 px-3 text-center font-bold text-[#6C6C6C] text-xs">{row.advisor || '-'}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="7" className="py-12 text-center text-sm md:text-base text-gray-400 font-bold">
+                <td colSpan="7" className="py-12 text-center text-xs md:text-sm text-[#6C6C6C] font-semibold italic">
                   Belum ada kendaraan dalam proses perbaikan saat ini
                 </td>
               </tr>

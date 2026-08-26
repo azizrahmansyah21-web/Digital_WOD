@@ -36,7 +36,13 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
         hasPlayedBackend = true;
 
         try {
-          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+          if ('speechSynthesis' in window) {
+            try {
+              window.speechSynthesis.cancel();
+            } catch (e) {}
+          }
+
+          const apiUrl = import.meta.env.VITE_API_URL || '/api';
           const message = `Panggilan kepada Bapak atau Ibu ${custName}, nomor polisi ${plateNo}, kendaraan Anda telah selesai dikerjakan.`;
           const audioUrl = `${apiUrl}/tts?text=${encodeURIComponent(message)}`;
           
@@ -86,12 +92,13 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
 
           window.speechSynthesis.speak(speechUtterance);
 
-          // Fallback timer: jika Web Speech API tidak memicu onstart dalam 1.5 detik (misal browser TV tanpa mesin suara id-ID), gunakan backend TTS
+          // Fallback timer: jika Web Speech API tidak memicu onstart dalam 1.2 detik (misal browser TV tanpa mesin suara id-ID), gunakan backend TTS
           fallbackTimer = setTimeout(() => {
-            if (!isSpeakingStarted && !window.speechSynthesis.speaking) {
+            if (!isSpeakingStarted) {
+              console.warn("Web Speech API tidak merespons dalam 1.2 detik, switch ke backend TTS");
               playBackendAudio();
             }
-          }, 1500);
+          }, 1200);
 
         } catch (err) {
           console.warn("SpeechSynthesis gagal, gunakan fallback backend TTS:", err);

@@ -33,12 +33,7 @@ class QueueController extends Controller
             // Fallback if target server is unreachable or timed out
         }
 
-        // Fallback to mock data if empty (e.g. when testing offline)
-        if (empty($queueData)) {
-            $queueData = $this->getMockToyotaData();
-        }
-
-        // 3. Return clean JSON array directly to React
+        // Return clean JSON array directly to React (empty array if no queue data)
         return response()->json($queueData);
     }
 

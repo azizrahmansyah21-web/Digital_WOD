@@ -36,16 +36,10 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
         hasPlayedBackend = true;
 
         try {
-          if ('speechSynthesis' in window) {
-            try {
-              window.speechSynthesis.cancel();
-            } catch (e) {}
-          }
-
-          const apiUrl = import.meta.env.VITE_API_URL || '/api';
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
           const message = `Panggilan kepada Bapak atau Ibu ${custName}, nomor polisi ${plateNo}, kendaraan Anda telah selesai dikerjakan.`;
           const audioUrl = `${apiUrl}/tts?text=${encodeURIComponent(message)}`;
-          
+
           audioObj = new Audio(audioUrl);
           audioObj.volume = 1.0;
           audioObj.play().catch((err) => {
@@ -60,7 +54,7 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
       if ('speechSynthesis' in window) {
         try {
           window.speechSynthesis.cancel();
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // Prioritas 1: Gunakan Web Speech API jika didukung oleh browser
@@ -68,7 +62,7 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
         try {
           const formattedPlate = formatPlateForSpeech(plateNo);
           const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${custName}, dengan nomor kendaraan ${formattedPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
-          
+
           speechUtterance = new SpeechSynthesisUtterance(textToSpeak);
           speechUtterance.lang = 'id-ID';
           speechUtterance.rate = 0.9;
@@ -92,13 +86,12 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
 
           window.speechSynthesis.speak(speechUtterance);
 
-          // Fallback timer: jika Web Speech API tidak memicu onstart dalam 1.2 detik (misal browser TV tanpa mesin suara id-ID), gunakan backend TTS
+          // Fallback timer: jika Web Speech API tidak memicu onstart dalam 1.5 detik (misal browser TV tanpa mesin suara id-ID), gunakan backend TTS
           fallbackTimer = setTimeout(() => {
-            if (!isSpeakingStarted) {
-              console.warn("Web Speech API tidak merespons dalam 1.2 detik, switch ke backend TTS");
+            if (!isSpeakingStarted && !window.speechSynthesis.speaking) {
               playBackendAudio();
             }
-          }, 1200);
+          }, 1500);
 
         } catch (err) {
           console.warn("SpeechSynthesis gagal, gunakan fallback backend TTS:", err);
@@ -118,18 +111,18 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
         window.removeEventListener('keydown', handleRemoteKey);
         clearTimeout(timer);
         if (fallbackTimer) clearTimeout(fallbackTimer);
-        
+
         // Hentikan semua suara ketika pop up ditutup
         if ('speechSynthesis' in window) {
           try {
             window.speechSynthesis.cancel();
-          } catch (e) {}
+          } catch (e) { }
         }
         if (audioObj) {
           try {
             audioObj.pause();
             audioObj.currentTime = 0;
-          } catch (e) {}
+          } catch (e) { }
         }
       };
     }
@@ -139,10 +132,10 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-fade-in">
-      
+
       {/* Modal Box: Terkunci max height 80vh agar tidak kepotong di TV */}
       <div className="relative w-full max-w-2xl max-h-[80vh] flex flex-col items-center justify-between rounded-2xl bg-[#1b6b50] p-8 shadow-2xl text-white overflow-hidden border-4 border-emerald-400/30">
-        
+
         {/* Tombol Close / Silang (X) */}
         <button
           onClick={onClose}
@@ -161,7 +154,7 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
         <h2 className="text-xl font-bold uppercase tracking-widest opacity-90 shrink-0 mb-1">
           Panggilan Pelanggan
         </h2>
-        
+
         <h1 className="text-3xl md:text-4xl font-extrabold text-center mt-1 mb-4 uppercase truncate w-full shrink-0">
           {custName}
         </h1>
@@ -178,7 +171,7 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
             Telah Selesai Dikerjakan
           </p>
         </div>
-        
+
       </div>
     </div>
   );

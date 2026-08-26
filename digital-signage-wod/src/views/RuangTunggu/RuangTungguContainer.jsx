@@ -40,7 +40,7 @@ const RuangTungguContainer = () => {
       // Step A: Attempt fetching JSON from Laravel API proxy
       try {
         const response = await axios.get(`${apiUrl}/antrean`, { timeout: 8000 });
-        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        if (response.data && Array.isArray(response.data)) {
           setVehicles(response.data);
           setIsLiveSource(true);
           setLastUpdated(new Date().toLocaleTimeString('id-ID'));
@@ -60,30 +60,19 @@ const RuangTungguContainer = () => {
 
           // ═══════════════════════════════════════════════════════════════
           // SECTION 1: Parse Main Table Rows (PROSES PERBAIKAN & TUNGGU CUCI)
-          // Structure: <table> -> <tbody> -> <tr> -> 6x <td>
-          //   td[0]: <span>No Polisi</span>
-          //   td[1]: Customer name (direct text)
-          //   td[2]: Mulai Dikerjakan time
-          //   td[3]: Estimasi Selesai time
-          //   td[4]: <span><span class="dot"></span> STATUS TEXT</span>
-          //   td[5]: Service Advisor
           // ═══════════════════════════════════════════════════════════════
           const tableRows = doc.querySelectorAll('table tbody tr');
           tableRows.forEach((tr, index) => {
             const tds = tr.querySelectorAll('td');
             if (tds.length >= 6) {
-              // td[0] has plate inside a <span> with special styling
               const plateSpan = tds[0].querySelector('span');
               const plate = (plateSpan ? plateSpan.textContent : tds[0].textContent).trim();
-
               const customer = tds[1].textContent.trim();
               const startTime = tds[2].textContent.trim();
               const estTime = tds[3].textContent.trim();
 
-              // td[4] has status inside nested spans — get the full text, strip dot span
               const statusSpan = tds[4].querySelector('span');
               let status = statusSpan ? statusSpan.textContent.trim() : tds[4].textContent.trim();
-              // Clean up status text (remove leading/trailing whitespace from nested elements)
               status = status.replace(/\s+/g, ' ').trim();
 
               const advisor = tds[5].textContent.trim();
@@ -105,11 +94,6 @@ const RuangTungguContainer = () => {
 
           // ═══════════════════════════════════════════════════════════════
           // SECTION 2: Parse Bottom Card Sections
-          // Structure: grid > div.panel > div.header(H3 + badge) + div.space-y-2(list)
-          //   Each list item: <div class="flex items-center justify-between">
-          //     <span class="font-outfit">PLATE</span>
-          //     <span class="text-xs font-bold">CUSTOMER</span>
-          //   </div>
           // ═══════════════════════════════════════════════════════════════
           const h3Elements = doc.querySelectorAll('h3');
           h3Elements.forEach((h3) => {
@@ -130,24 +114,19 @@ const RuangTungguContainer = () => {
               statusName = 'PERBAIKAN DILANJUT BESOK';
               statusKey = 'b';
             } else {
-              return; // Skip unknown sections
+              return;
             }
 
-            // Navigate to the panel container: h3 -> parent div (header) -> parent div (panel)
             const headerDiv = h3.closest('.flex');
             if (!headerDiv) return;
-
-            const panelContainer = headerDiv.parentElement; // the flex header wrapper
+            const panelContainer = headerDiv.parentElement;
             if (!panelContainer) return;
-
-            const panelRoot = panelContainer.parentElement; // the actual panel div
+            const panelRoot = panelContainer.parentElement;
             if (!panelRoot) return;
 
-            // Find the scrollable list container (div.space-y-2)
             const listContainer = panelRoot.querySelector('.space-y-2');
             if (!listContainer) return;
 
-            // Each vehicle item is a direct child div with flex layout containing 2 spans
             const vehicleItems = listContainer.querySelectorAll(':scope > div');
             vehicleItems.forEach((item, idx) => {
               const spans = item.querySelectorAll('span');
@@ -155,7 +134,6 @@ const RuangTungguContainer = () => {
                 const candidatePlate = spans[0].textContent.trim();
                 const candidateCustomer = spans[1].textContent.trim();
 
-                // Validate this is actually a vehicle entry, not a "Kosong" message
                 if (
                   candidatePlate &&
                   candidateCustomer &&
@@ -166,7 +144,6 @@ const RuangTungguContainer = () => {
                   candidatePlate.length >= 3 &&
                   candidatePlate.length <= 20
                 ) {
-                  // Deduplicate — don't add if plate already exists
                   if (!parsedList.some((v) => v.plate === candidatePlate)) {
                     parsedList.push({
                       id: `${statusKey}-${idx}`,
@@ -184,12 +161,9 @@ const RuangTungguContainer = () => {
             });
           });
 
-          if (parsedList.length > 0) {
-            setVehicles(parsedList);
-            setIsLiveSource(true);
-            setLastUpdated(new Date().toLocaleTimeString('id-ID'));
-            return;
-          }
+          setVehicles(parsedList);
+          setIsLiveSource(true);
+          setLastUpdated(new Date().toLocaleTimeString('id-ID'));
         }
       } catch (proxyErr) {
         // Network offline or proxy timeout — vehicles stay empty

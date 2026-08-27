@@ -182,7 +182,7 @@ const RuangTungguContainer = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Audio Context unlocker
+  // Audio Context & Media unlocker for browser autoplay policies
   useEffect(() => {
     const unlockAudioContext = () => {
       if ('speechSynthesis' in window) {
@@ -190,6 +190,13 @@ const RuangTungguContainer = () => {
           window.speechSynthesis.resume();
         } catch (e) { }
       }
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          ctx.resume().then(() => ctx.close());
+        }
+      } catch (e) {}
     };
 
     window.addEventListener('keydown', unlockAudioContext, { once: true });

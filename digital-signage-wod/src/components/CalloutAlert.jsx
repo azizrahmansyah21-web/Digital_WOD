@@ -1,15 +1,31 @@
 import React, { useEffect, useRef } from 'react';
 
+// Preloaded persistent module-level chime audio instance for instant zero-latency playback
+let chimeAudio = null;
+if (typeof window !== 'undefined' && typeof Audio !== 'undefined') {
+  try {
+    chimeAudio = new Audio('/chime-airport.mp3');
+    chimeAudio.preload = 'auto';
+    chimeAudio.volume = 1.0;
+  } catch (e) {}
+}
+
 // Module-level audio reference to ensure ONLY ONE audio plays at any given time across all renders
 let globalAudioInstance = null;
 
 const stopGlobalAudio = () => {
-  if ('speechSynthesis' in window) {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     try {
       window.speechSynthesis.cancel();
     } catch (e) {}
   }
-  if (globalAudioInstance) {
+  if (chimeAudio) {
+    try {
+      chimeAudio.pause();
+      chimeAudio.currentTime = 0;
+    } catch (e) {}
+  }
+  if (globalAudioInstance && globalAudioInstance !== chimeAudio) {
     try {
       globalAudioInstance.pause();
       globalAudioInstance.currentTime = 0;
@@ -62,6 +78,7 @@ const CalloutAlert = ({
 
     let hasPlayedAnyAudio = false;
     let fallbackTimer = null;
+    let cutoffTimer = null;
 
     const rateVal = parseFloat(ttsSpeechRate) || 0.9;
     const formattedPlate = plateNo.replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
@@ -94,51 +111,95 @@ const CalloutAlert = ({
       }
     };
 
-    // Prioritas 1: Gunakan Web Speech API jika didukung
-    if ('speechSynthesis' in window) {
-      try {
-        const speechUtterance = new SpeechSynthesisUtterance(textToSpeak);
-        speechUtterance.lang = 'id-ID';
-        speechUtterance.rate = rateVal;
+    const startSpeech = () => {
+      if ('speechSynthesis' in window) {
+        try {
+          const speechUtterance = new SpeechSynthesisUtterance(textToSpeak);
+          speechUtterance.lang = 'id-ID';
+          speechUtterance.rate = rateVal;
 
-        const voices = window.speechSynthesis.getVoices();
-        const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
-        if (idV) speechUtterance.voice = idV;
+          const voices = window.speechSynthesis.getVoices();
+          const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
+          if (idV) speechUtterance.voice = idV;
 
-        let isSpeakingStarted = false;
+          let isSpeakingStarted = false;
 
-        speechUtterance.onstart = () => {
-          isSpeakingStarted = true;
-          hasPlayedAnyAudio = true;
-          if (fallbackTimer) clearTimeout(fallbackTimer);
-        };
+          speechUtterance.onstart = () => {
+            isSpeakingStarted = true;
+            hasPlayedAnyAudio = true;
+            if (fallbackTimer) clearTimeout(fallbackTimer);
+          };
 
-        speechUtterance.onerror = (e) => {
-          if (e.error === 'canceled' || e.error === 'interrupted') return;
-          console.warn("SpeechSynthesis error, memutar fallback backend TTS:", e);
-          if (fallbackTimer) clearTimeout(fallbackTimer);
-          playBackendAudio();
-        };
-
-        speechUtterance.onend = () => {
-          hasPlayedAnyAudio = true;
-        };
-
-        window.speechSynthesis.speak(speechUtterance);
-
-        fallbackTimer = setTimeout(() => {
-          if (!isSpeakingStarted && !hasPlayedAnyAudio) {
-            console.warn("Web Speech API tidak merespons, switch ke backend TTS");
+          speechUtterance.onerror = (e) => {
+            if (e.error === 'canceled' || e.error === 'interrupted') return;
+            console.warn("SpeechSynthesis error, memutar fallback backend TTS:", e);
+            if (fallbackTimer) clearTimeout(fallbackTimer);
             playBackendAudio();
-          }
-        }, 1200);
+          };
 
-      } catch (err) {
-        console.warn("SpeechSynthesis gagal, gunakan fallback backend TTS:", err);
+          speechUtterance.onend = () => {
+            hasPlayedAnyAudio = true;
+          };
+
+          window.speechSynthesis.speak(speechUtterance);
+
+          fallbackTimer = setTimeout(() => {
+            if (!isSpeakingStarted && !hasPlayedAnyAudio) {
+              console.warn("Web Speech API tidak merespons, switch ke backend TTS");
+              playBackendAudio();
+            }
+          }, 1200);
+
+        } catch (err) {
+          console.warn("SpeechSynthesis gagal, gunakan fallback backend TTS:", err);
+          playBackendAudio();
+        }
+      } else {
         playBackendAudio();
       }
+    };
+
+    // Play 3-Second Airport Chime Sound FIRST, then TTS announcement
+    let chimeFinished = false;
+    const finishChimeAndStartSpeech = () => {
+      if (!chimeFinished) {
+        chimeFinished = true;
+        if (chimeAudio) {
+          try {
+            chimeAudio.pause();
+            chimeAudio.currentTime = 0;
+          } catch (e) {}
+        }
+        startSpeech();
+      }
+    };
+
+    if (chimeAudio) {
+      try {
+        chimeAudio.currentTime = 0;
+        chimeAudio.volume = 1.0;
+        globalAudioInstance = chimeAudio;
+
+        // Trigger speech when 3-second chime ends naturally
+        chimeAudio.onended = finishChimeAndStartSpeech;
+
+        const playPromise = chimeAudio.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              // Safety fallback: in case onended does not trigger, proceed to speech after 3.5s
+              cutoffTimer = setTimeout(finishChimeAndStartSpeech, 3500);
+            })
+            .catch((err) => {
+              console.warn("Chime audio autoplay policy blocked:", err);
+              finishChimeAndStartSpeech();
+            });
+        }
+      } catch (err) {
+        finishChimeAndStartSpeech();
+      }
     } else {
-      playBackendAudio();
+      finishChimeAndStartSpeech();
     }
 
     // Remote D-Pad / OK / Back key handling
@@ -165,6 +226,7 @@ const CalloutAlert = ({
       window.removeEventListener('keydown', handleRemoteKey);
       clearTimeout(timer);
       if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (cutoffTimer) clearTimeout(cutoffTimer);
       stopGlobalAudio();
     };
   }, [active, custName, plateNo, enableTts, durationPopupSec, ttsSpeechRate, ttsTemplate]);
@@ -173,7 +235,6 @@ const CalloutAlert = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-fade-in font-radio">
-
       {/* Modal Box: Terkunci max height 80vh agar tidak kepotong di TV */}
       <div className="relative w-full max-w-2xl max-h-[80vh] flex flex-col items-center justify-between rounded-2xl bg-[#1b6b50] p-8 shadow-2xl text-white overflow-hidden border-4 border-emerald-400/30">
 

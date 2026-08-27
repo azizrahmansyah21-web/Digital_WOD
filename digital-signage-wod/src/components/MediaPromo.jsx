@@ -3,11 +3,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 const MediaPromo = ({ 
   videoType = 'youtube', 
   videoUrl = 'bzQFeVWCC9Y',
-  playlist = []
+  playlist = [],
+  isCalloutActive = false
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const videoRef = useRef(null);
+  const iframeRef = useRef(null);
 
   // Parse playlist array if passed as string JSON
   let mediaItems = [];
@@ -55,7 +57,7 @@ const MediaPromo = ({
 
   // Unmute MP4 Video Playback with browser Autoplay unlocker
   useEffect(() => {
-    if (isVideoMp4 && videoRef.current) {
+    if (isVideoMp4 && videoRef.current && !isCalloutActive) {
       const videoEl = videoRef.current;
       videoEl.muted = false;
       videoEl.volume = 1.0;
@@ -67,11 +69,38 @@ const MediaPromo = ({
         videoEl.play().catch(() => {});
       });
     }
-  }, [activeIndex, isVideoMp4]);
+  }, [activeIndex, isVideoMp4, isCalloutActive]);
+
+  // Pause / Resume Video & Audio when TTS Callout Popup is active
+  useEffect(() => {
+    if (isCalloutActive) {
+      // Pause MP4 Video
+      if (videoRef.current) {
+        try { videoRef.current.pause(); } catch (e) {}
+      }
+      // Pause YouTube Video via IFrame postMessage API
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        try {
+          iframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        } catch (e) {}
+      }
+    } else {
+      // Resume MP4 Video
+      if (isVideoMp4 && videoRef.current) {
+        try { videoRef.current.play().catch(() => {}); } catch (e) {}
+      }
+      // Resume YouTube Video via IFrame postMessage API
+      if (isYouTube && iframeRef.current && iframeRef.current.contentWindow) {
+        try {
+          iframeRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        } catch (e) {}
+      }
+    }
+  }, [isCalloutActive, isVideoMp4, isYouTube]);
 
   // Auto Slide Switcher per item duration (for Images & YouTube fallback)
   useEffect(() => {
-    if (mediaItems.length <= 1) return;
+    if (mediaItems.length <= 1 || isCalloutActive) return;
 
     // For HTML5 MP4 videos, slide transitions on onEnded event.
     // For Images or YouTube, use configured duration timer.
@@ -84,7 +113,7 @@ const MediaPromo = ({
 
       return () => clearTimeout(timer);
     }
-  }, [activeIndex, mediaItems, currentItem, isImage, isYouTube, handleNextSlide]);
+  }, [activeIndex, mediaItems, currentItem, isImage, isYouTube, isCalloutActive, handleNextSlide]);
 
   let youtubeId = itemUrl;
   if (itemUrl.includes('v=')) {
@@ -94,7 +123,6 @@ const MediaPromo = ({
   }
 
   const playlistIds = `${youtubeId},1C7jI1Ul3EI,ptB1j00C38g,nSusFwssBZg`;
-  // Set mute=0 so YouTube video plays audio with sound
   const iframeSrc = `https://www.youtube.com/embed/${youtubeId}?playlist=${playlistIds}&autoplay=1&mute=0&loop=1&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&enablejsapi=1`;
 
   return (
@@ -138,6 +166,7 @@ const MediaPromo = ({
           />
         ) : (
           <iframe
+            ref={iframeRef}
             key={currentItem.id || activeIndex}
             className="w-full h-full object-cover pointer-events-none"
             src={iframeSrc}

@@ -278,6 +278,7 @@ const RuangTungguContainer = () => {
             videoType={cmsSettings.promo_video_type}
             videoUrl={cmsSettings.promo_video_url}
             promoPlaylist={cmsSettings.promo_playlist}
+            isCalloutActive={Boolean(calloutVehicle)}
           />
         ) : (
           <ViewProses 

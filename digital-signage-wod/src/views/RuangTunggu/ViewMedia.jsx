@@ -10,7 +10,8 @@ const ViewMedia = ({
   runningText = '',
   videoType = 'youtube',
   videoUrl = 'bzQFeVWCC9Y',
-  promoPlaylist = []
+  promoPlaylist = [],
+  isCalloutActive = false
 }) => {
   return (
     <div className="grid grid-cols-[28%_72%] grid-rows-[calc(100vh-64px)_64px] w-screen h-screen overflow-hidden bg-white">
@@ -25,7 +26,12 @@ const ViewMedia = ({
 
       {/* Area Kanan (72%): Pemutar Video Promo */}
       <main className="col-start-2 col-end-3 row-start-1 row-end-2 relative w-full h-full overflow-hidden bg-[#F6F8FB]">
-        <MediaPromo videoType={videoType} videoUrl={videoUrl} playlist={promoPlaylist} />
+        <MediaPromo 
+          videoType={videoType} 
+          videoUrl={videoUrl} 
+          playlist={promoPlaylist}
+          isCalloutActive={isCalloutActive} 
+        />
       </main>
 
       {/* Area Bawah: Running Text Footer Ticker */}

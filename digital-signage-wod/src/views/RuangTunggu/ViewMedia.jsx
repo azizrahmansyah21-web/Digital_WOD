@@ -3,7 +3,15 @@ import CardStatus from '../../components/CardStatus';
 import MediaPromo from '../../components/MediaPromo';
 import Ticker from '../../components/Ticker';
 
-const ViewMedia = ({ waitingVehicles = [], completedVehicles = [], tomorrowVehicles = [] }) => {
+const ViewMedia = ({ 
+  waitingVehicles = [], 
+  completedVehicles = [], 
+  tomorrowVehicles = [],
+  runningText = '',
+  videoType = 'youtube',
+  videoUrl = 'bzQFeVWCC9Y',
+  promoPlaylist = []
+}) => {
   return (
     <div className="grid grid-cols-[28%_72%] grid-rows-[calc(100vh-64px)_64px] w-screen h-screen overflow-hidden bg-white">
       {/* Area Kiri (28%): Card Status Antrean Ringkas */}
@@ -17,12 +25,12 @@ const ViewMedia = ({ waitingVehicles = [], completedVehicles = [], tomorrowVehic
 
       {/* Area Kanan (72%): Pemutar Video Promo */}
       <main className="col-start-2 col-end-3 row-start-1 row-end-2 relative w-full h-full overflow-hidden bg-[#F6F8FB]">
-        <MediaPromo />
+        <MediaPromo videoType={videoType} videoUrl={videoUrl} playlist={promoPlaylist} />
       </main>
 
       {/* Area Bawah: Running Text Footer Ticker */}
       <footer className="col-start-1 col-end-3 row-start-2 row-end-3 relative w-full h-full overflow-hidden z-10 border-t border-[#DBE0EC]">
-        <Ticker />
+        <Ticker text={runningText} />
       </footer>
     </div>
   );

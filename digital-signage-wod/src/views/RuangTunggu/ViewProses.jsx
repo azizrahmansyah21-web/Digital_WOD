@@ -2,7 +2,11 @@ import React from 'react';
 import MainTable from '../../components/MainTable';
 import Ticker from '../../components/Ticker';
 
-const ViewProses = ({ vehicles = [], inProgressVehicles = [] }) => {
+const ViewProses = ({ 
+  vehicles = [], 
+  inProgressVehicles = [],
+  runningText = ''
+}) => {
   return (
     <div className="grid grid-cols-1 grid-rows-[calc(100vh-64px)_64px] w-screen h-screen overflow-hidden bg-white">
       {/* Main Table Full Screen */}
@@ -12,7 +16,7 @@ const ViewProses = ({ vehicles = [], inProgressVehicles = [] }) => {
 
       {/* Footer Ticker */}
       <footer className="relative w-full h-full overflow-hidden z-10 border-t border-[#DBE0EC]">
-        <Ticker />
+        <Ticker text={runningText} />
       </footer>
     </div>
   );

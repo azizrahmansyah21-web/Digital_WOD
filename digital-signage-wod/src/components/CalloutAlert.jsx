@@ -18,7 +18,17 @@ const stopGlobalAudio = () => {
   }
 };
 
-const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) => {
+const CalloutAlert = ({ 
+  vehicle, 
+  customerName, 
+  plateNumber, 
+  isOpen, 
+  onClose,
+  enableTts = true,
+  durationPopupSec = 12,
+  ttsSpeechRate = 0.9,
+  ttsTemplate = 'Panggilan untuk pelanggan Toyota, Bapak atau Ibu {customer}, dengan nomor kendaraan {plate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.'
+}) => {
   const custName = customerName || vehicle?.customer;
   const plateNo = plateNumber || vehicle?.plate;
   const active = isOpen !== undefined ? (isOpen && Boolean(custName)) : Boolean(vehicle);
@@ -38,11 +48,29 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
     }
     lastPlayedKeyRef.current = currentKey;
 
-    // 1. Stop any currently playing audio immediately
     stopGlobalAudio();
+
+    // Check if TTS is enabled
+    const ttsEnabled = enableTts === true || enableTts === '1' || enableTts === 1 || enableTts === 'true';
+    if (!ttsEnabled) {
+      // Audio disabled via CMS - only show visual popup modal
+      const timerNoAudio = setTimeout(() => {
+        if (onClose) onClose();
+      }, (parseInt(durationPopupSec) || 12) * 1000);
+      return () => clearTimeout(timerNoAudio);
+    }
 
     let hasPlayedAnyAudio = false;
     let fallbackTimer = null;
+
+    const rateVal = parseFloat(ttsSpeechRate) || 0.9;
+    const formattedPlate = plateNo.replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
+    
+    // Construct custom spoken message from template
+    const templateStr = ttsTemplate || 'Panggilan untuk pelanggan Toyota, Bapak atau Ibu {customer}, dengan nomor kendaraan {plate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.';
+    const textToSpeak = templateStr
+      .replace(/{customer}/g, custName)
+      .replace(/{plate}/g, formattedPlate);
 
     const playBackendAudio = () => {
       if (hasPlayedAnyAudio) return;
@@ -52,8 +80,7 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
 
       try {
         const apiUrl = import.meta.env.VITE_API_URL || '/api';
-        const message = `Panggilan kepada Bapak atau Ibu ${custName}, nomor polisi ${plateNo}, kendaraan Anda telah selesai dikerjakan.`;
-        const audioUrl = `${apiUrl}/tts?text=${encodeURIComponent(message)}`;
+        const audioUrl = `${apiUrl}/tts?text=${encodeURIComponent(textToSpeak)}`;
 
         const audioObj = new Audio(audioUrl);
         audioObj.volume = 1.0;
@@ -70,12 +97,9 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
     // Prioritas 1: Gunakan Web Speech API jika didukung
     if ('speechSynthesis' in window) {
       try {
-        const formattedPlate = plateNo.replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
-        const textToSpeak = `Panggilan untuk pelanggan Toyota, Bapak atau Ibu ${custName}, dengan nomor kendaraan ${formattedPlate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.`;
-
         const speechUtterance = new SpeechSynthesisUtterance(textToSpeak);
         speechUtterance.lang = 'id-ID';
-        speechUtterance.rate = 0.9;
+        speechUtterance.rate = rateVal;
 
         const voices = window.speechSynthesis.getVoices();
         const idV = voices.find((v) => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
@@ -90,9 +114,7 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
         };
 
         speechUtterance.onerror = (e) => {
-          // Abaikan error 'canceled' / 'interrupted' yang dipemicu oleh penutupan modal / cleanup
           if (e.error === 'canceled' || e.error === 'interrupted') return;
-
           console.warn("SpeechSynthesis error, memutar fallback backend TTS:", e);
           if (fallbackTimer) clearTimeout(fallbackTimer);
           playBackendAudio();
@@ -104,7 +126,6 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
 
         window.speechSynthesis.speak(speechUtterance);
 
-        // Fallback timer: Jika Web Speech API tidak memicu onstart dalam 1.2 detik, switch ke Backend TTS
         fallbackTimer = setTimeout(() => {
           if (!isSpeakingStarted && !hasPlayedAnyAudio) {
             console.warn("Web Speech API tidak merespons, switch ke backend TTS");
@@ -120,7 +141,7 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
       playBackendAudio();
     }
 
-    // Remote D-Pad / OK / Back key handling for Xiaomi Android TV (BrowsHere)
+    // Remote D-Pad / OK / Back key handling
     const handleRemoteKey = (e) => {
       if (
         ['Enter', 'Escape', 'Backspace', ' ', 'GoBack'].includes(e.key) ||
@@ -134,10 +155,11 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
 
     window.addEventListener('keydown', handleRemoteKey);
 
-    // Auto-close modal setelah 10 detik
+    // Auto-close modal berdasarkan durasi_popup_sec dari CMS
+    const popupDurationMs = (parseInt(durationPopupSec) || 12) * 1000;
     const timer = setTimeout(() => {
       if (onClose) onClose();
-    }, 10000);
+    }, popupDurationMs);
 
     return () => {
       window.removeEventListener('keydown', handleRemoteKey);
@@ -145,12 +167,12 @@ const CalloutAlert = ({ vehicle, customerName, plateNumber, isOpen, onClose }) =
       if (fallbackTimer) clearTimeout(fallbackTimer);
       stopGlobalAudio();
     };
-  }, [active, custName, plateNo]);
+  }, [active, custName, plateNo, enableTts, durationPopupSec, ttsSpeechRate, ttsTemplate]);
 
   if (!active || !custName || !plateNo) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-fade-in font-radio">
 
       {/* Modal Box: Terkunci max height 80vh agar tidak kepotong di TV */}
       <div className="relative w-full max-w-2xl max-h-[80vh] flex flex-col items-center justify-between rounded-2xl bg-[#1b6b50] p-8 shadow-2xl text-white overflow-hidden border-4 border-emerald-400/30">

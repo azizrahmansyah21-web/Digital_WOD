@@ -67,7 +67,7 @@ class SignageSettingSeeder extends Seeder
             ],
             [
                 'key' => 'duration_popup_sec',
-                'value' => '12',
+                'value' => '20',
                 'type' => 'integer',
             ],
             [

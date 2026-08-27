@@ -1,12 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 
-// Preloaded persistent module-level chime audio instance for instant zero-latency playback
-let chimeAudio = null;
+// Preloaded persistent module-level audio instances for zero-latency intro & closing chimes
+let chimeIntroAudio = null;
+let chimeClosingAudio = null;
+
 if (typeof window !== 'undefined' && typeof Audio !== 'undefined') {
   try {
-    chimeAudio = new Audio('/chime-airport.mp3');
-    chimeAudio.preload = 'auto';
-    chimeAudio.volume = 1.0;
+    chimeIntroAudio = new Audio('/chime-airport.mp3');
+    chimeIntroAudio.preload = 'auto';
+    chimeIntroAudio.volume = 1.0;
+
+    chimeClosingAudio = new Audio('/chime-closing.mp3');
+    chimeClosingAudio.preload = 'auto';
+    chimeClosingAudio.volume = 1.0;
   } catch (e) {}
 }
 
@@ -19,13 +25,19 @@ const stopGlobalAudio = () => {
       window.speechSynthesis.cancel();
     } catch (e) {}
   }
-  if (chimeAudio) {
+  if (chimeIntroAudio) {
     try {
-      chimeAudio.pause();
-      chimeAudio.currentTime = 0;
+      chimeIntroAudio.pause();
+      chimeIntroAudio.currentTime = 0;
     } catch (e) {}
   }
-  if (globalAudioInstance && globalAudioInstance !== chimeAudio) {
+  if (chimeClosingAudio) {
+    try {
+      chimeClosingAudio.pause();
+      chimeClosingAudio.currentTime = 0;
+    } catch (e) {}
+  }
+  if (globalAudioInstance && globalAudioInstance !== chimeIntroAudio && globalAudioInstance !== chimeClosingAudio) {
     try {
       globalAudioInstance.pause();
       globalAudioInstance.currentTime = 0;
@@ -41,7 +53,7 @@ const CalloutAlert = ({
   isOpen, 
   onClose,
   enableTts = true,
-  durationPopupSec = 12,
+  durationPopupSec = 20,
   ttsSpeechRate = 0.9,
   ttsTemplate = 'Panggilan untuk pelanggan Toyota, Bapak atau Ibu {customer}, dengan nomor kendaraan {plate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.'
 }) => {
@@ -72,13 +84,13 @@ const CalloutAlert = ({
       // Audio disabled via CMS - only show visual popup modal
       const timerNoAudio = setTimeout(() => {
         if (onClose) onClose();
-      }, (parseInt(durationPopupSec) || 12) * 1000);
+      }, (parseInt(durationPopupSec) || 20) * 1000);
       return () => clearTimeout(timerNoAudio);
     }
 
     let hasPlayedAnyAudio = false;
     let fallbackTimer = null;
-    let cutoffTimer = null;
+    let autoCloseBufferTimer = null;
 
     const rateVal = parseFloat(ttsSpeechRate) || 0.9;
     const formattedPlate = plateNo.replace(/[^a-zA-Z0-9]/g, '').split('').join(' ');
@@ -89,6 +101,39 @@ const CalloutAlert = ({
       .replace(/{customer}/g, custName)
       .replace(/{plate}/g, formattedPlate);
 
+    // Phase 3: Play Closing Chime (Outro) and smoothly close modal
+    const playClosingChime = () => {
+      if (chimeClosingAudio) {
+        try {
+          chimeClosingAudio.currentTime = 0;
+          chimeClosingAudio.volume = 1.0;
+          globalAudioInstance = chimeClosingAudio;
+
+          chimeClosingAudio.onended = () => {
+            // Buffer 1.5s after closing chime before dismissing modal
+            autoCloseBufferTimer = setTimeout(() => {
+              if (onClose) onClose();
+            }, 1500);
+          };
+
+          const playPromise = chimeClosingAudio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              // If audio fails, close after 1.5s
+              autoCloseBufferTimer = setTimeout(() => {
+                if (onClose) onClose();
+              }, 1500);
+            });
+          }
+        } catch (err) {
+          if (onClose) onClose();
+        }
+      } else {
+        if (onClose) onClose();
+      }
+    };
+
+    // Phase 2 (Fallback): Play Backend Audio TTS if Web Speech API unavailable
     const playBackendAudio = () => {
       if (hasPlayedAnyAudio) return;
       hasPlayedAnyAudio = true;
@@ -103,14 +148,21 @@ const CalloutAlert = ({
         audioObj.volume = 1.0;
         globalAudioInstance = audioObj;
 
+        audioObj.onended = () => {
+          playClosingChime();
+        };
+
         audioObj.play().catch((err) => {
           console.warn("Autoplay terblokir oleh browser TV:", err);
+          playClosingChime();
         });
       } catch (err) {
         console.warn("Gagal memutar audio backend TTS:", err);
+        playClosingChime();
       }
     };
 
+    // Phase 2: Play Spoken TTS Voice Announcement
     const startSpeech = () => {
       if ('speechSynthesis' in window) {
         try {
@@ -132,13 +184,14 @@ const CalloutAlert = ({
 
           speechUtterance.onerror = (e) => {
             if (e.error === 'canceled' || e.error === 'interrupted') return;
-            console.warn("SpeechSynthesis error, memutar fallback backend TTS:", e);
+            console.warn("SpeechSynthesis error, switch fallback backend TTS:", e);
             if (fallbackTimer) clearTimeout(fallbackTimer);
             playBackendAudio();
           };
 
           speechUtterance.onend = () => {
             hasPlayedAnyAudio = true;
+            playClosingChime();
           };
 
           window.speechSynthesis.speak(speechUtterance);
@@ -159,47 +212,46 @@ const CalloutAlert = ({
       }
     };
 
-    // Play 3-Second Airport Chime Sound FIRST, then TTS announcement
-    let chimeFinished = false;
-    const finishChimeAndStartSpeech = () => {
-      if (!chimeFinished) {
-        chimeFinished = true;
-        if (chimeAudio) {
+    // Phase 1: Play Intro Airport Bell (Bel Airport.mp3), then trigger Spoken Speech
+    let introFinished = false;
+    const finishIntroAndStartSpeech = () => {
+      if (!introFinished) {
+        introFinished = true;
+        if (chimeIntroAudio) {
           try {
-            chimeAudio.pause();
-            chimeAudio.currentTime = 0;
+            chimeIntroAudio.pause();
+            chimeIntroAudio.currentTime = 0;
           } catch (e) {}
         }
         startSpeech();
       }
     };
 
-    if (chimeAudio) {
+    if (chimeIntroAudio) {
       try {
-        chimeAudio.currentTime = 0;
-        chimeAudio.volume = 1.0;
-        globalAudioInstance = chimeAudio;
+        chimeIntroAudio.currentTime = 0;
+        chimeIntroAudio.volume = 1.0;
+        globalAudioInstance = chimeIntroAudio;
 
-        // Trigger speech when 3-second chime ends naturally
-        chimeAudio.onended = finishChimeAndStartSpeech;
+        chimeIntroAudio.onended = finishIntroAndStartSpeech;
 
-        const playPromise = chimeAudio.play();
+        const playPromise = chimeIntroAudio.play();
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
-              // Safety fallback: in case onended does not trigger, proceed to speech after 3.5s
-              cutoffTimer = setTimeout(finishChimeAndStartSpeech, 3500);
+              // Safety fallback: Proceed to speech after 3.5s if onended delayed
+              setTimeout(finishIntroAndStartSpeech, 3500);
             })
             .catch((err) => {
-              console.warn("Chime audio autoplay policy blocked:", err);
-              finishChimeAndStartSpeech();
+              console.warn("Intro chime blocked, starting speech:", err);
+              finishIntroAndStartSpeech();
             });
         }
       } catch (err) {
-        finishChimeAndStartSpeech();
+        finishIntroAndStartSpeech();
       }
     } else {
-      finishChimeAndStartSpeech();
+      finishIntroAndStartSpeech();
     }
 
     // Remote D-Pad / OK / Back key handling
@@ -216,17 +268,17 @@ const CalloutAlert = ({
 
     window.addEventListener('keydown', handleRemoteKey);
 
-    // Auto-close modal berdasarkan durasi_popup_sec dari CMS
-    const popupDurationMs = (parseInt(durationPopupSec) || 12) * 1000;
-    const timer = setTimeout(() => {
+    // Maximum safety auto-close timeout based on durationPopupSec from CMS (Default 20s)
+    const popupDurationMs = (parseInt(durationPopupSec) || 20) * 1000;
+    const maxTimer = setTimeout(() => {
       if (onClose) onClose();
     }, popupDurationMs);
 
     return () => {
       window.removeEventListener('keydown', handleRemoteKey);
-      clearTimeout(timer);
+      clearTimeout(maxTimer);
       if (fallbackTimer) clearTimeout(fallbackTimer);
-      if (cutoffTimer) clearTimeout(cutoffTimer);
+      if (autoCloseBufferTimer) clearTimeout(autoCloseBufferTimer);
       stopGlobalAudio();
     };
   }, [active, custName, plateNo, enableTts, durationPopupSec, ttsSpeechRate, ttsTemplate]);

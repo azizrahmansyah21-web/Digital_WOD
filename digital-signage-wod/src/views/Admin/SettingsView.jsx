@@ -10,7 +10,7 @@ const SettingsView = () => {
     promo_video_type: 'youtube',
     promo_video_url: 'bzQFeVWCC9Y',
     enable_tts: '1',
-    duration_popup_sec: '12',
+    duration_popup_sec: '20',
     tts_speech_rate: '0.9',
     tts_template: 'Panggilan untuk pelanggan Toyota, Bapak atau Ibu {customer}, dengan nomor kendaraan {plate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.',
   });

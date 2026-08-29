@@ -241,7 +241,7 @@ const SettingsView = () => {
         setMessage({ type: 'success', text: 'Pengaturan CMS & Playlist Promo berhasil disimpan!' });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Gagal menyimpan pengaturan CMS. Pastikan backend Laravel berjalan di localhost:8000.' });
+      setMessage({ type: 'error', text: 'Gagal menyimpan pengaturan CMS. Pastikan koneksi ke server backend (API) berjalan dengan baik.' });
     } finally {
       setSaving(false);
     }

@@ -14,7 +14,9 @@ Business Requirements Document - WOD.md
 PRD_Update_DSS.md
 Implementation_Plan_Digital_Signage.md
 UpdatePlan_v1.1_CMS_Integration_Automation.md
-
+ImplementationPlan.md
+UpdatePlan_v1.1_CMS_Integration_and_Automation.md
+UpdatePlan_v1.2_WhatsApp_Decryption_Integration.md
 
 # Dependencies
 node_modules/

@@ -196,7 +196,7 @@ const RuangTungguContainer = () => {
           const ctx = new AudioCtx();
           ctx.resume().then(() => ctx.close());
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     window.addEventListener('keydown', unlockAudioContext, { once: true });
@@ -249,7 +249,7 @@ const RuangTungguContainer = () => {
   return (
     <div className="relative w-screen h-screen overflow-hidden select-none bg-slate-100 flex flex-col">
       {/* Debug Toolbar & Quick Action Buttons */}
-      <div className="absolute top-2 right-2 z-50 flex items-center gap-2 bg-white/95 border border-gray-200 px-3 py-1 rounded-full text-xs shadow-sm select-none font-radio">
+      {/* <div className="absolute top-2 right-2 z-50 flex items-center gap-2 bg-white/95 border border-gray-200 px-3 py-1 rounded-full text-xs shadow-sm select-none font-radio">
         <span className="flex items-center gap-1.5 font-bold text-[11px] text-gray-600">
           <span className={`w-2 h-2 rounded-full ${isLiveSource ? 'bg-green-500' : 'bg-amber-500'} animate-pulse-dot`}></span>
           {currentView === 'media' ? 'VIEW 1: MEDIA' : 'VIEW 2: TABEL'}
@@ -272,7 +272,7 @@ const RuangTungguContainer = () => {
         >
           TEST POPUP
         </button>
-      </div>
+      </div> */}
 
       {/* Auto Carousel View Render */}
       <div key={currentView} className="w-full h-full animate-fade-in flex-1 min-h-0">
@@ -288,18 +288,18 @@ const RuangTungguContainer = () => {
             isCalloutActive={Boolean(calloutVehicle)}
           />
         ) : (
-          <ViewProses 
-            vehicles={vehicles} 
-            inProgressVehicles={inProgressVehicles} 
+          <ViewProses
+            vehicles={vehicles}
+            inProgressVehicles={inProgressVehicles}
             runningText={cmsSettings.running_text_ticker}
           />
         )}
       </div>
 
       {/* Full-Screen Visual Alert Callout */}
-      <CalloutAlert 
-        vehicle={calloutVehicle} 
-        onClose={() => setCalloutVehicle(null)} 
+      <CalloutAlert
+        vehicle={calloutVehicle}
+        onClose={() => setCalloutVehicle(null)}
         enableTts={cmsSettings.enable_tts}
         durationPopupSec={cmsSettings.duration_popup_sec}
         ttsSpeechRate={cmsSettings.tts_speech_rate}

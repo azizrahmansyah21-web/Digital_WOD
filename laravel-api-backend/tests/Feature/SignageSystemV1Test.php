@@ -71,6 +71,7 @@ class SignageSystemV1Test extends TestCase
                     'promo_playlist',
                     'enable_tts',
                     'duration_popup_sec',
+                    'show_debug_toolbar',
                 ]
             ]);
     }
@@ -82,6 +83,7 @@ class SignageSystemV1Test extends TestCase
             'duration_media_sec' => '45',
             'enable_tts' => '1',
             'duration_popup_sec' => '15',
+            'show_debug_toolbar' => '1',
         ];
 
         $response = $this->putJson('/api/v1/admin/settings', $payload);
@@ -96,6 +98,29 @@ class SignageSystemV1Test extends TestCase
             'key' => 'running_text_ticker',
             'value' => 'Pengumuman Baru WOD Server v1.1',
         ]);
+
+        $this->assertDatabaseHas('signage_settings', [
+            'key' => 'show_debug_toolbar',
+            'value' => '1',
+        ]);
+    }
+
+    public function testDisplaySettingsApiReflectsUpdatedDebugToolbarState()
+    {
+        // First retrieve default settings (should be '0')
+        $resDefault = $this->getJson('/api/v1/display/settings');
+        $resDefault->assertStatus(200)
+            ->assertJsonPath('data.show_debug_toolbar', '0');
+
+        // Update setting to '1' (Active)
+        $this->putJson('/api/v1/admin/settings', [
+            'show_debug_toolbar' => '1'
+        ])->assertStatus(200);
+
+        // Verify public display settings return '1'
+        $resUpdated = $this->getJson('/api/v1/display/settings');
+        $resUpdated->assertStatus(200)
+            ->assertJsonPath('data.show_debug_toolbar', '1');
     }
 
     public function testAdminCanUploadPromoMedia()
@@ -115,6 +140,22 @@ class SignageSystemV1Test extends TestCase
             ]);
 
         Storage::disk('public')->assertExists('media/' . $file->hashName());
+    }
+
+    public function testUploadMediaFailsWhenFileMissingOrInvalid()
+    {
+        // Test missing file
+        $response = $this->postJson('/api/v1/admin/upload-media', []);
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['file']);
+
+        // Test invalid file type (e.g. .pdf or .exe)
+        $invalidFile = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
+        $resInvalid = $this->postJson('/api/v1/admin/upload-media', [
+            'file' => $invalidFile
+        ]);
+        $resInvalid->assertStatus(422)
+            ->assertJsonValidationErrors(['file']);
     }
 
     public function testAdminCanRetrieveWaNotificationLogs()

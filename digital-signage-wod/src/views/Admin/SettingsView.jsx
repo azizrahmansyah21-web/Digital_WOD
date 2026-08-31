@@ -13,6 +13,7 @@ const SettingsView = () => {
     duration_popup_sec: '20',
     tts_speech_rate: '0.9',
     tts_template: 'Panggilan untuk pelanggan Toyota, Bapak atau Ibu {customer}, dengan nomor kendaraan {plate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.',
+    show_debug_toolbar: '0',
   });
 
   // Promo Playlist Array State
@@ -132,6 +133,7 @@ const SettingsView = () => {
           duration_popup_sec: raw.duration_popup_sec?.value || '12',
           tts_speech_rate: raw.tts_speech_rate?.value || '0.9',
           tts_template: raw.tts_template?.value || 'Panggilan untuk pelanggan Toyota, Bapak atau Ibu {customer}, dengan nomor kendaraan {plate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.',
+          show_debug_toolbar: raw.show_debug_toolbar?.value !== undefined ? String(raw.show_debug_toolbar.value) : '0',
         });
       }
 
@@ -433,6 +435,35 @@ const SettingsView = () => {
               />
               <p className="text-xs font-semibold text-[#6C6C6C]">
                 Gunakan variabel <code className="font-mono bg-gray-100 px-1 py-0.5 rounded text-[#000000]">{'{customer}'}</code> untuk nama pelanggan dan <code className="font-mono bg-gray-100 px-1 py-0.5 rounded text-[#000000]">{'{plate}'}</code> untuk plat nomor kendaraan.
+              </p>
+            </div>
+          </div>
+
+          {/* SECTION: Toolbar Debug & Pengujian Layar */}
+          <div className="pt-4 border-t border-[#DBE0EC] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-black uppercase text-[#000000] tracking-wider">🛠️ Toolbar Debug & Pengujian Layar TV</h3>
+                <p className="text-xs font-semibold text-[#6C6C6C] mt-0.5">Tombol melayang di pojok kanan atas layar display TV untuk pengujian live teknisi.</p>
+              </div>
+              <span className="text-xs font-extrabold text-[#000000] bg-gradient-accent border border-[#DBE0EC] px-3 py-1 rounded-full shadow-2xs">
+                Testing Tools
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-black text-[#000000] uppercase tracking-wider">Status Debug Toolbar di Layar TV</label>
+              <select
+                name="show_debug_toolbar"
+                value={formData.show_debug_toolbar}
+                onChange={handleChange}
+                className="w-full max-w-md px-4 py-2.5 rounded-xl border border-[#DBE0EC] bg-[#F6F8FB] focus:bg-white focus:ring-2 focus:ring-toyota-red focus:border-toyota-red text-xs font-extrabold text-[#000000]"
+              >
+                <option value="0">🚫 NONAKTIF (Sembunyikan Toolbar - Mode Live TV)</option>
+                <option value="1">🛠️ AKTIF (Tampilkan Tombol Switch View & Test Popup di TV)</option>
+              </select>
+              <p className="text-xs font-semibold text-[#6C6C6C]">
+                Pilih <b>AKTIF</b> jika Anda ingin tombol <i>SWITCH</i> dan <i>TEST POPUP</i> muncul di pojok kanan atas layar TV untuk memudahkan simulasi.
               </p>
             </div>
           </div>

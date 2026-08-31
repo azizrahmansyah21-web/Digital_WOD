@@ -24,6 +24,7 @@ const RuangTungguContainer = () => {
     duration_popup_sec: 20,
     tts_speech_rate: '0.9',
     tts_template: 'Panggilan untuk pelanggan Toyota, Bapak atau Ibu {customer}, dengan nomor kendaraan {plate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.',
+    show_debug_toolbar: '0',
   });
 
   // Anti-Spam state for Text-to-Speech voice callouts & fast settings cache
@@ -248,31 +249,33 @@ const RuangTungguContainer = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden select-none bg-slate-100 flex flex-col">
-      {/* Debug Toolbar & Quick Action Buttons */}
-      {/* <div className="absolute top-2 right-2 z-50 flex items-center gap-2 bg-white/95 border border-gray-200 px-3 py-1 rounded-full text-xs shadow-sm select-none font-radio">
-        <span className="flex items-center gap-1.5 font-bold text-[11px] text-gray-600">
-          <span className={`w-2 h-2 rounded-full ${isLiveSource ? 'bg-green-500' : 'bg-amber-500'} animate-pulse-dot`}></span>
-          {currentView === 'media' ? 'VIEW 1: MEDIA' : 'VIEW 2: TABEL'}
-        </span>
-        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${isLiveSource ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
-          {isLiveSource ? `📡 LIVE (${lastUpdated})` : '⏳ Menunggu data...'}
-        </span>
-        <button
-          onClick={() => setCurrentView(currentView === 'media' ? 'proses' : 'media')}
-          className="text-[10px] font-bold px-2.5 py-1 rounded bg-toyota-red hover:bg-toyota-red-dark text-white transition-colors cursor-pointer"
-        >
-          SWITCH
-        </button>
-        <button
-          onClick={() => {
-            const testVeh = { customer: 'BAPAK BUDI (TEST)', plate: 'BM 9999 TOYOTA' };
-            setCalloutVehicle(testVeh);
-          }}
-          className="text-[10px] font-bold px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors border border-emerald-400 cursor-pointer"
-        >
-          TEST POPUP
-        </button>
-      </div> */}
+      {/* Debug Toolbar & Quick Action Buttons (Controlled via CMS) */}
+      {(cmsSettings.show_debug_toolbar === '1' || cmsSettings.show_debug_toolbar === true || cmsSettings.show_debug_toolbar === 1) && (
+        <div className="absolute top-2 right-2 z-50 flex items-center gap-2 bg-white/95 border border-gray-200 px-3 py-1 rounded-full text-xs shadow-sm select-none font-radio">
+          <span className="flex items-center gap-1.5 font-bold text-[11px] text-gray-600">
+            <span className={`w-2 h-2 rounded-full ${isLiveSource ? 'bg-green-500' : 'bg-amber-500'} animate-pulse-dot`}></span>
+            {currentView === 'media' ? 'VIEW 1: MEDIA' : 'VIEW 2: TABEL'}
+          </span>
+          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${isLiveSource ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+            {isLiveSource ? `📡 LIVE (${lastUpdated})` : '⏳ Menunggu data...'}
+          </span>
+          <button
+            onClick={() => setCurrentView(currentView === 'media' ? 'proses' : 'media')}
+            className="text-[10px] font-bold px-2.5 py-1 rounded bg-toyota-red hover:bg-toyota-red-dark text-white transition-colors cursor-pointer"
+          >
+            SWITCH
+          </button>
+          <button
+            onClick={() => {
+              const testVeh = { customer: 'BAPAK BUDI (TEST)', plate: 'BM 9999 TOYOTA' };
+              setCalloutVehicle(testVeh);
+            }}
+            className="text-[10px] font-bold px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors border border-emerald-400 cursor-pointer"
+          >
+            TEST POPUP
+          </button>
+        </div>
+      )}
 
       {/* Auto Carousel View Render */}
       <div key={currentView} className="w-full h-full animate-fade-in flex-1 min-h-0">

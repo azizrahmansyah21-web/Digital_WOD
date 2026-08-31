@@ -80,6 +80,11 @@ class SignageSettingSeeder extends Seeder
                 'value' => 'Panggilan untuk pelanggan Toyota, Bapak atau Ibu {customer}, dengan nomor kendaraan {plate}, servis kendaraan Anda telah selesai dikerjakan. Terima kasih.',
                 'type' => 'string',
             ],
+            [
+                'key' => 'show_debug_toolbar',
+                'value' => '0',
+                'type' => 'boolean',
+            ],
         ];
 
         foreach ($defaultSettings as $setting) {

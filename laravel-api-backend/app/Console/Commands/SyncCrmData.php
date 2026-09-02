@@ -50,31 +50,9 @@ class SyncCrmData extends Command
             Cache::put('wod_live_queues', $parsedList, now()->addMinutes(10));
             Cache::put('wod_last_synced', Carbon::now()->toIso8601String());
 
-            // Process finished services for WA notifications (Idempotent per plate per day)
-            $today = Carbon::today();
-            foreach ($parsedList as $vehicle) {
-                if (isset($vehicle['status']) && str_contains(strtoupper($vehicle['status']), 'SELESAI')) {
-                    $plate = $vehicle['plate'];
-                    $customer = $vehicle['customer'];
-
-                    $alreadyLogged = WaNotificationLog::where('plate_number', $plate)
-                        ->whereDate('created_at', $today)
-                        ->exists();
-
-                    if (!$alreadyLogged) {
-                        WaNotificationLog::create([
-                            'plate_number' => $plate,
-                            'customer_name' => $customer,
-                            'status' => 'PENDING',
-                            'response_payload' => [
-                                'message' => "Panggilan kepada Yth. {$customer}, kendaraan dengan nopol {$plate} telah selesai dikerjakan.",
-                                'source' => 'SyncCrmData Command',
-                            ]
-                        ]);
-                        $this->info("Logged pending WA notification for: {$plate} - {$customer}");
-                    }
-                }
-            }
+            // Catatan: Logika untuk mengirim notifikasi WA ke mobil yang selesai
+            // telah dipindahkan ke Command 'ProcessAutomatedWA' (Phase 3)
+            // agar SyncCrmData hanya fokus menarik data CRM ke Cache.
 
             $this->info('Successfully synced ' . count($parsedList) . ' vehicles to cache.');
         } else {

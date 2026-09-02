@@ -42,3 +42,7 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# WA Gateway Session
+wa-gateway/.wwebjs_auth/
+wa-gateway/.wwebjs_cache/

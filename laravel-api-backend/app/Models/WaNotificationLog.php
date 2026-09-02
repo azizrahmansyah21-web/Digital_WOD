@@ -2,25 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class WaNotificationLog extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory;
 
     protected $table = 'wa_notification_logs';
 
     protected $fillable = [
-        'id',
-        'plate_number',
+        'plat_no',
         'customer_name',
+        'decrypted_phone',
         'status',
-        'response_payload',
-    ];
-
-    protected $casts = [
-        'response_payload' => 'array',
+        'error_details',
+        'notified_date',
     ];
 }

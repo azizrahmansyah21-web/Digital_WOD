@@ -12,12 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('wa_notification_logs', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('plate_number')->index();
-            $table->string('customer_name');
-            $table->enum('status', ['PENDING', 'SENT', 'FAILED'])->default('PENDING');
-            $table->json('response_payload')->nullable();
+            $table->id();
+            $table->string('plat_no')->index();
+            $table->string('customer_name')->nullable();
+            $table->string('decrypted_phone')->nullable();
+            $table->enum('status', ['SENT', 'FAILED', 'DECRYPT_FAILED'])->default('SENT');
+            $table->text('error_details')->nullable();
+            $table->date('notified_date')->index();
             $table->timestamps();
+            
+            // Constraint Indeks Unik (Anti-Spam Idempotency)
+            $table->unique(['plat_no', 'notified_date'], 'unique_daily_plate_notification');
         });
     }
 

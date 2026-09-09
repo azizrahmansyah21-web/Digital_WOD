@@ -26,16 +26,16 @@ const PlateNumber = ({ plate, className = '' }) => {
   if (p2 === '') {
     return (
       <span className={`inline-flex justify-center items-center bg-white text-black font-plate rounded border-2 border-black shadow-sm shrink-0 whitespace-nowrap overflow-hidden leading-none ${className}`}>
-        <span>{p1}</span>
+        <span className="relative -top-[1px] md:-top-[2px]">{p1}</span>
       </span>
     );
   }
 
   return (
-    <span className={`inline-flex justify-between items-center bg-white text-black font-plate rounded border-1 border-black shadow-sm shrink-0 whitespace-nowrap overflow-hidden leading-none gap-2 ${className}`}>
-      <span>{p1}</span>
-      <span>{p2}</span>
-      <span>{p3}</span>
+    <span className={`inline-flex justify-between items-center bg-white text-black font-plate rounded border-2 border-black shadow-sm shrink-0 whitespace-nowrap overflow-hidden leading-none gap-2 ${className}`}>
+      <span className="relative -top-[1px] md:-top-[2px]">{p1}</span>
+      <span className="relative -top-[1px] md:-top-[2px]">{p2}</span>
+      <span className="relative -top-[1px] md:-top-[2px]">{p3}</span>
     </span>
   );
 };

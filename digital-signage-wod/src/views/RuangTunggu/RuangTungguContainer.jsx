@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ViewMedia from './ViewMedia';
 import ViewProses from './ViewProses';
+import MediaPromo from '../../components/MediaPromo';
 import CalloutAlert from '../../components/CalloutAlert';
 import axios from 'axios';
 
@@ -278,8 +279,9 @@ const RuangTungguContainer = () => {
       )}
 
       {/* Auto Carousel View Render */}
-      <div key={currentView} className="w-full h-full animate-fade-in flex-1 min-h-0">
-        {currentView === 'media' ? (
+      <div className="w-full h-full flex-1 min-h-0 relative">
+        {/* Layer 1: View Media */}
+        <div className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${currentView === 'media' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
           <ViewMedia
             waitingVehicles={waitingVehicles}
             completedVehicles={completedVehicles}
@@ -290,13 +292,33 @@ const RuangTungguContainer = () => {
             promoPlaylist={cmsSettings.promo_playlist}
             isCalloutActive={Boolean(calloutVehicle)}
           />
-        ) : (
+        </div>
+
+        {/* Layer 2: View Proses */}
+        <div className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${currentView === 'proses' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
           <ViewProses
             vehicles={vehicles}
             inProgressVehicles={inProgressVehicles}
             runningText={cmsSettings.running_text_ticker}
           />
-        )}
+        </div>
+
+        {/* Floating PiP Media Promo (TIDAK PERNAH DI-UNMOUNT) */}
+        <div
+          className={`absolute transition-all duration-1000 ease-in-out z-40 overflow-hidden ${
+            currentView === 'media'
+              ? 'top-0 right-0 w-[72%] h-[calc(100vh-64px)] rounded-none shadow-none border-0'
+              : 'bottom-[84px] right-6 w-[400px] aspect-video rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border-[3px] border-white'
+          }`}
+        >
+          <MediaPromo
+            videoType={cmsSettings.promo_video_type}
+            videoUrl={cmsSettings.promo_video_url}
+            playlist={cmsSettings.promo_playlist}
+            isCalloutActive={Boolean(calloutVehicle)}
+            isPip={currentView === 'proses'}
+          />
+        </div>
       </div>
 
       {/* Full-Screen Visual Alert Callout */}

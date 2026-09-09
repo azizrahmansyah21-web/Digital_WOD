@@ -4,7 +4,8 @@ const MediaPromo = ({
   videoType = 'youtube', 
   videoUrl = 'bzQFeVWCC9Y',
   playlist = [],
-  isCalloutActive = false
+  isCalloutActive = false,
+  isPip = false
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
@@ -128,21 +129,23 @@ const MediaPromo = ({
   return (
     <div className="w-full h-full flex flex-col bg-white overflow-hidden relative select-none font-radio">
       {/* Header with Active Slide Information */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200 z-10 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-extrabold tracking-widest text-gray-500 uppercase">
-            {currentItem.title || 'INFORMASI & PROMO'}
-          </span>
-          {mediaItems.length > 1 && (
-            <span className="text-[10px] font-black bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full border border-gray-300">
-              {activeIndex + 1}/{mediaItems.length}
+      {!isPip && (
+        <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200 z-10 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-extrabold tracking-widest text-gray-500 uppercase">
+              {currentItem.title || 'INFORMASI & PROMO'}
             </span>
-          )}
+            {mediaItems.length > 1 && (
+              <span className="text-[10px] font-black bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full border border-gray-300">
+                {activeIndex + 1}/{mediaItems.length}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] font-black bg-toyota-red text-white px-2.5 py-0.5 rounded tracking-wider">
+            TOYOTA SERVICE
+          </span>
         </div>
-        <span className="text-[10px] font-black bg-toyota-red text-white px-2.5 py-0.5 rounded tracking-wider">
-          TOYOTA SERVICE
-        </span>
-      </div>
+      )}
 
       {/* Media Display Container */}
       <div className="flex-1 w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
@@ -178,26 +181,28 @@ const MediaPromo = ({
       </div>
 
       {/* Live Promotion Footer with Playlist Indicators */}
-      <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-[10px] shrink-0 flex items-center justify-between">
-        <div className="flex items-center gap-2 font-bold text-toyota-red tracking-wider">
-          <span className="w-2 h-2 bg-toyota-red rounded-full animate-pulse-dot"></span>
-          INFORMASI PROMOSI AGUNG TOYOTA
-        </div>
-
-        {/* Dots indicator for multi-item playlist */}
-        {mediaItems.length > 1 && (
-          <div className="flex items-center gap-1.5">
-            {mediaItems.map((_, idx) => (
-              <span
-                key={idx}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  idx === activeIndex ? 'bg-toyota-red scale-125' : 'bg-gray-300'
-                }`}
-              />
-            ))}
+      {!isPip && (
+        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-[10px] shrink-0 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-toyota-red tracking-wider">
+            <span className="w-2 h-2 bg-toyota-red rounded-full animate-pulse-dot"></span>
+            INFORMASI PROMOSI AGUNG TOYOTA
           </div>
-        )}
-      </div>
+
+          {/* Dots indicator for multi-item playlist */}
+          {mediaItems.length > 1 && (
+            <div className="flex items-center gap-1.5">
+              {mediaItems.map((_, idx) => (
+                <span
+                  key={idx}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    idx === activeIndex ? 'bg-toyota-red scale-125' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

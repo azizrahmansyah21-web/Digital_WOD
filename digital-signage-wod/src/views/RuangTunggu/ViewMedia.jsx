@@ -1,6 +1,5 @@
 import React from 'react';
 import CardStatus from '../../components/CardStatus';
-import MediaPromo from '../../components/MediaPromo';
 import Ticker from '../../components/Ticker';
 
 const ViewMedia = ({ 
@@ -24,14 +23,9 @@ const ViewMedia = ({
         />
       </aside>
 
-      {/* Area Kanan (72%): Pemutar Video Promo */}
+      {/* Area Kanan (72%): Pemutar Video Promo (Dikosongkan untuk Floating PiP) */}
       <main className="col-start-2 col-end-3 row-start-1 row-end-2 relative w-full h-full overflow-hidden bg-[#F6F8FB]">
-        <MediaPromo 
-          videoType={videoType} 
-          videoUrl={videoUrl} 
-          playlist={promoPlaylist}
-          isCalloutActive={isCalloutActive} 
-        />
+        {/* Konten dikosongkan agar Floating PiP dari Container bisa mengisi area ini tanpa menabrak Grid */}
       </main>
 
       {/* Area Bawah: Running Text Footer Ticker */}

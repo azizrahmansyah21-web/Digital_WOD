@@ -9,6 +9,11 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 
+Schedule::command('sync:crm-data')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->runInBackground();
+
 Schedule::command('wa:process-automation')
     ->everyMinute()
     ->withoutOverlapping(5)
